@@ -13,6 +13,18 @@
 			
 			
 		}); 
+		
+		//OnError
+		window.onerror = function(msg, url, line)
+		{
+			window.alert("Errore: msg " + msg + " url:" + url + " line:" + line);
+		  /*
+		  var req = new XMLHttpRequest();
+		  var params = "msg=" + encodeURIComponent(msg) + '&amp;url=' + encodeURIComponent(url) + "&amp;line=" + line;
+		  req.open("POST", "/scripts/logerror.php");
+		  req.send(params);
+		  */
+		};
  
  	/* Funzioni */
 	  
@@ -26,9 +38,25 @@
 			.replace(/\*/g, '%2A');
 		}
 		
+		function currentMOD() {
+			var href = document.location.href;
+			var parm = href.substring(href.indexOf("wform")+6).split("/");
+			if(parm.length>1){
+				return parm[0];
+			} else {
+				return "";
+			}
+		}
+		
 		function currentID() {
 			var href = document.location.href;
-			return href.substr(href.lastIndexOf('/') + 1);
+			var parm = href.substring(href.indexOf("wform")+6).split("/");
+			if(parm.length>1){
+				return parm[1];
+			} else {
+				//alert("n");
+				return "";
+			}
 		}
 		
 		function copyTextToClipboard(text) {
@@ -97,7 +125,7 @@
 		var n = noty({
 			layout: 'topRight',
 			theme: 'relax',
-			type: 'success',
+			type: type,
 			text: message,
 			timeout: delay,
 			animation: {
@@ -115,15 +143,17 @@
 		var form_data;
 		
 		$.ajax({
-			url: "lib/db.php", 
+			url: "/wform/lib/req_db.php", 
+			cache: false,
 			context: document.body, 
 			success: function(data){
-						if(data.substring(0, 1)=="#"){
-							view_alert("fail",data,false);
-						}else {
-							if(data!=""){
-								form_data = jQuery.parseJSON( data );
-								loadData(form_data);
+						if(data!=""){
+							if(data.substring(0, 1)=="#"){
+								view_alert("fail","fail:"+data,false);
+							}else {
+									view_alert("fail","data:"+data+" "+currentID(),false);
+									form_data = jQuery.parseJSON( data );
+									loadData(form_data);
 							}
 						}
 					 },
@@ -141,15 +171,21 @@
 		$(':input','form#mainform').not(':button, :submit, :reset, :hidden, :text')
 							 .removeAttr('checked')
 							 .removeAttr('selected');
-							 
+		
+		//view_alert("info",form_data,false);
+		
+		//alert("aa");
+		
 		//carica
 		for (var i in form_data) {
 			var obj = form_data[i];
+			//alert(obj['name']);
 			
+			//alert($(':input[name="'+obj['name']+'"]').attr('type'));
 			switch($('input[name="'+obj['name']+'"]').attr('type')) {
 				case 'radio':
 				case 'checkbox':
-					$('input[name='+obj['name']+'][value='+obj['value']+']').prop('checked', true);
+					$('input[name="'+obj['name']+'"][value='+obj['value']+']').prop('checked', true);
 					break;
 				default:
 					$('input[name="'+obj['name']+'"]').val(obj['value']);
@@ -165,11 +201,14 @@
 	/* Salva */
 	function saveDoc(){
 		var form_data = $("form#mainform").serializeArray();
-		var form_data_json = JSON.stringify(form_data); 
-		console.log(form_data_json);
 		
+		//Add System data
+		form_data.unshift({id:currentID(), mod:currentMOD()});
+		
+		var form_data_json = JSON.stringify(form_data);	//console.log(form_data_json);
 		$.ajax({
-			url: "lib/db.php", 
+			url: "/wform/lib/req_db.php",
+			cache: false,
 			context: document.body, 
 			success: function(data){
 						if(data.substring(0, 1)=="#"){
@@ -177,8 +216,10 @@
 						}else if(data.substring(0, 1)==">") {
 							//redirect
 							window.location.replace(data.substring(1));
+						}else if(data.substring(0, 1)=="=") {
+							view_alert("success","Operazione eseguita correttamente! ",false);
 						}else{
-							view_alert("success","Modifiche salvate correttamente!",5000);
+							view_alert("alert","L'operazione ha restituito il seguente messaggio: "+data,false);
 							form_change_notify(true);
 						}
 					 },
@@ -204,6 +245,7 @@
 
 			$.ajax({
 			url: "cambiaRowpub.php", 
+			cache: false,
 			context: document.body, 
 			success: function(data){
 						var delay = 5000;
@@ -268,6 +310,7 @@
 				  
 				  $.ajax({
 					url: "cambia.php", 
+					cache: false,
 					context: document.body, 
 					success: function(data){
 								var delay = 20000;

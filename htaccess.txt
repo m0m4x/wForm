@@ -4,9 +4,4 @@ RewriteCond $1 !-f
 RewriteCond $1 !-d
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond %{REQUEST_FILENAME} !-d
-RewriteRule ^(.*)[\/](.*)$ /wform/index.php?f=$1&id=$2 [L,QSA]
-
-RewriteCond $1 !^(index\.php|resources|robots\.txt)
-RewriteCond %{REQUEST_FILENAME} !-f
-RewriteCond %{REQUEST_FILENAME} !-d
-RewriteRule ^(.*)$ /wform/index.php?f=$1 [L,QSA]
+RewriteRule ^([^\/]*)(?:[\/]([^\/]*)[\/]?)?$ /wform/index.php?f=$1&id=$2 [L,QSA]

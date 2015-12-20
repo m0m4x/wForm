@@ -1,4 +1,8 @@
 <?php
+//HEADER - NO CACHE
+header("Cache-Control: no-cache, must-revalidate"); // HTTP/1.1
+header("Expires: Sat, 26 Jul 1997 05:00:00 GMT"); // Date in the past
+header('Content-Type: text/html; charset=UTF-8'); 
 
 //APRI DB
 $dbhandle = new mysqli("127.0.0.1", "php", "php", "wform");
@@ -49,7 +53,7 @@ switch ($action) {
 			 die( print_r( mysqli_error($dbhandle), true));
 		}
 		$count = 0;
-		if( $row = mysqli_fetch_array( $stmt, MYSQLI_ASSOC)) 
+		if( $row = mysqli_fetch_array( $stmt, MYSQLI_ASSOC))
 			echo $row['data'];
 			//echo json_encode($row['data']);
 	break;

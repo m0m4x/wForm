@@ -4,10 +4,24 @@
 	
 	//CARICA TIPOLOGIA
 	$doc_type = isset($_GET['f']) ? $_GET['f'] : null;
-	$doc_type = ($doc_type != '') ? $doc_type : "co18";	//default co18
-
+	//$doc_type = ($doc_type != '') ? $doc_type : "co18";	//default co18
+	if(is_null($doc_type)){
+		//Form non richiesto: Scelta Minuta
+		//echo "Reindirizzo a scelta Minuta!";
+		header("Location: /wform/list.php");
+		die();	
+	}
+	if(!file_exists("doc/".$doc_type.".docx")){
+		//Form richiesto NON ESISTENTE:  
+		//echo "Reindirizzo a scelta Minuta!";
+		header("Location: /wform/list.php");
+		die();	
+	}
+	
 	//carica interprete word 
-		//check se esiste altimenti reindirizza a home
+	require_once("lib/lib_word.php");
+	$form = form_load($doc_type);
+	
 	
 	//registra versione se non esiste (array to json in db)
 	$doc_ver = 0;
@@ -22,6 +36,7 @@
 
 		//filtro dati
 		$id = isset($_GET['id']) ? mysqli_real_escape_string($dbhandle,$_GET['id']) : null;
+		$id = ($id != '') ? $id : null;
 		
 		//prendi dati
 		if(!is_null($id)){
@@ -33,6 +48,8 @@
 			}
 			$doc_var = mysqli_fetch_array( $stmt, MYSQLI_ASSOC);
 			if(!isset($doc_var)) {
+				//Reindirizza a nuova Minuta
+				//echo "Nuova minuta!";
 				header("Location: /wform/".$doc_type);
 				die();	
 			}
@@ -51,6 +68,9 @@
 
     <title>ChiantiBanca Minute</title>
 
+	<!-- dev wrapper for IE -->
+	<script src="/wform/js/dev.js"></script>
+	
 	<!-- jQuery Version 1.11.3 -->
     <script src="/wform/js/jquery.min.js"></script>
 	
@@ -146,98 +166,59 @@
 		  
 		  <!-- Form -->
 		  
-		  TODO: Tramite interprete word stampa forma blocchi
-		  
-  <!-- Row start -->
-  <div class="row">
-    <div class="col-md-12 col-sm-6 col-xs-12">
-      <div class="panel panel-default">
-        <div class="panel-heading clearfix">
-          <i class="icon-calendar"></i>
-          <h3 class="panel-title">BLOCCO 1</h3>
-        </div>
-       
-        <div class="panel-body">
-          <form id="mainform" class="form-horizontal row-border" action="#">
-            <div class="form-group">
-              <label class="col-md-2 control-label">Radio</label>
-              <div class="col-md-10">
-				  <label class="radio-inline">
-					<input name="optionsRadios" id="optionsRadios1" value="option1" checked="" type="radio"> 1
-				  </label>
-				  <label class="radio-inline">
-					<input name="optionsRadios" id="optionsRadios2" value="option2" type="radio">2
-				  </label>
-				  <label class="radio-inline">
-					<input name="optionsRadios" id="optionsRadios3" value="option3" disabled="" type="radio">3
-				  </label>
-              </div>
-            </div>
-            <div class="form-group">
-              <label class="col-md-2 control-label">Check</label>
-              <div class="col-md-10">
-				  <label class="checkbox-inline">
-					<input name="optionsCheckbox" id="inlineCheckbox1" value="option1" checked="" type="checkbox"> 1
-				  </label>
-				  <label class="checkbox-inline">
-					<input name="optionsCheckbox" id="inlineCheckbox2" value="option2" type="checkbox"> 2
-				  </label>
-				  <label class="checkbox-inline">
-					<input name="optionsCheckbox" id="inlineCheckbox3" value="option3" type="checkbox"> 3
-				  </label>
-              </div>
-            </div>
-			<div class="form-group">
-              <label class="col-md-2 control-label">Default input field</label>
-              <div class="col-md-10">
-                <input name="txt1" class="form-control" type="text">
-              </div>
-            </div>
-            <div class="form-group">
-              <label class="col-md-2 control-label">With placeholder</label>
-              <div class="col-md-10">
-                <input class="form-control" name="placeholder" placeholder="placeholder" type="text">
-              </div>
-            </div>
-            <div class="form-group">
-              <label class="col-md-2 control-label">Read only field</label>
-              <div class="col-md-10">
-                <input class="form-control" name="readonly" readonly="" value="read only" type="text">
-              </div>
-            </div>
-            <div class="form-group">
-              <label class="col-md-2 control-label">Help text</label>
-              <div class="col-md-10">
-                <input name="regular1" class="form-control" type="text">
-                <span class="help-block">A block of help text that breaks onto a new line and may extend beyond one line.</span>
-              </div>
-            </div>
-            <div class="form-group">
-              <label class="col-md-2 control-label">Predefined value</label>
-              <div class="col-md-10">
-                <input name="regular2" value="http://" class="form-control" type="text">
-              </div>
-            </div>
-            <div class="form-group">
-              <label class="col-md-2 control-label">With icon</label>
-              <div class="col-md-10">
-                <input name="regular3" class="form-control" type="text">
-                <i class="icon-pencil input-icon"></i>
-              </div>
-            </div>
-            <div class="form-group">
-              <label for="labelfor" class="col-md-2 control-label">Clickable label</label>
-              <div class="col-md-10">
-                <input name="labelfor" id="labelfor" class="form-control" type="text">
-              </div>
-            </div>
-          </form>
-        </div>
-      </div>
-    </div>
-  </div>
-  <!-- Row end -->
-					
+			<div class="bs-example">
+				<form class="form-horizontal" id="mainform">
+
+				  <!-- Row start -->
+				  <div class="row">
+					<div class="col-md-12 col-sm-12 col-xs-12">
+					  <div class="panel panel-default">
+						<div class="panel-heading clearfix">
+						  <i class="icon-calendar"></i>
+						  <h3 class="panel-title">configurazione</h3>
+						</div>
+					   
+						<div class="panel-body">
+						  <form id="mainform" class="form-horizontal row-border" action="#">
+							
+							<?php form_se($form); ?>
+							
+						  </form>
+						</div>
+					  </div>
+					</div>
+				  </div>
+				  <!-- Row end -->
+						
+
+				  <!-- Row start -->
+				  <div class="row">
+					<div class="col-md-12 col-sm-12 col-xs-12">
+					  <div class="panel panel-default">
+						<div class="panel-heading clearfix">
+						  <i class="icon-calendar"></i>
+						  <h3 class="panel-title">valori</h3>
+						</div>
+					   
+						<div class="panel-body">
+						  <form id="mainform" class="form-horizontal row-border" action="#">
+							
+							<?php form_var($form); ?>
+							
+						  </form>
+						</div>
+					  </div>
+					</div>
+				  </div>
+				  <!-- Row end -->
+				
+				</form>
+			</div>
+
+
+
+
+		
 		  <hr />
 		  </div>
 		</div>
