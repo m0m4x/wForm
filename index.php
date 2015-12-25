@@ -20,7 +20,8 @@
 	
 	//carica interprete word 
 	require_once("lib/lib_word.php");
-	$form = form_load($doc_type);
+	$p = form_load_text($doc_type);
+	$form = form_load($doc_type,$p);
 	
 	
 	//registra versione se non esiste (array to json in db)
@@ -224,13 +225,13 @@
 		</div>
 		
 		<div class="row">
-		  <div class="col-md-4"><button type="button" class="btn btn-success btn-block" onClick="saveDoc()" >Salva</button></div>
+		  <div class="col-md-4"><button type="button" class="btn-salva btn btn-success btn-block" >Salva</button></div>
 		  <div class="col-md-4">&nbsp;</div>
-		  <div class="col-md-4"><button type="button" class="btn btn-primary btn-block">Crea Minuta</button></div>
+		  <div class="col-md-4"><button type="button" class="btn-crea btn btn-primary btn-block" disabled="">Crea Minuta</button></div>
 		</div>
 		
 		<div class="row" style="margin-top:20px">
-		  <div class="col-md-4"><button type="button" class="btn btn-success btn-block" onClick="loadDoc()" >Carica</button></div>
+		  <div class="col-md-4"><button type="button" class="btn-carica btn btn-success btn-block" >Carica</button></div>
 		  <div class="col-md-4">&nbsp;</div>
 		  <div class="col-md-4"></div>
 		</div>

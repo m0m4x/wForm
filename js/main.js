@@ -9,9 +9,7 @@
 		$(document).ready( function() { 
 			//carica Documento
 			if(currentID()!=""){ loadDoc(currentID()); }
-			
-			
-			
+
 		}); 
 		
 		//OnError
@@ -25,8 +23,11 @@
 		  req.send(params);
 		  */
 		};
+
  
  	/* Funzioni */
+	  
+		//Testo
 	  
 		function rawurlencode(str) {
 		  str = (str + '').toString();
@@ -89,16 +90,8 @@
 		  }
 		  document.body.removeChild(textArea);
 		}
-    
-	/* Notifica Modifiche */
-		$(document).ready( function() {
-			
-			$("form :input").change(function() {
-			  form_change_notify(false);
-			});
-			
-							
-		});
+		
+		//Notifiche
 		
 		function form_change_notify(saved){
 			if(currentID()==""){
@@ -119,23 +112,45 @@
 			}
 		}
 		
-	/* Alert */ 
+		//Alert
+		
+		function view_alert(type,message,delay){
+			var n = noty({
+				layout: 'topRight',
+				theme: 'relax',
+				type: type,
+				text: message,
+				timeout: delay,
+				animation: {
+					open: {height: 'toggle'}, // jQuery animate function property object
+					close: {height: 'toggle'}, // jQuery animate function property object
+					easing: 'swing', // easing
+					speed: 300 // opening & closing animation speed
+				}
+			});
+		}
+    
+	/* Modifiche a Form Bootstrap */
 	
-	function view_alert(type,message,delay){
-		var n = noty({
-			layout: 'topRight',
-			theme: 'relax',
-			type: type,
-			text: message,
-			timeout: delay,
-			animation: {
-				open: {height: 'toggle'}, // jQuery animate function property object
-				close: {height: 'toggle'}, // jQuery animate function property object
-				easing: 'swing', // easing
-				speed: 300 // opening & closing animation speed
-			}
-		});
-	}
+		$(document).ready( function() { 
+			
+			//Eventi
+			$('.btn-salva').click(saveDoc);
+			$('.btn-carica').click(loadDoc);
+			$('.btn-crea').click(reqDoc);
+			
+			//notifica cambiamento
+			$("form :input").change(function() {
+			  form_change_notify(false);
+			});
+			
+			//dropdown testo in input
+			$('.dropdown-menu li a').click(function(e) {
+				//window.alert($(this).attr('input'));
+				$("input#"+$(this).attr('input')).val($(this).text());
+			});
+			
+		}); 
 	
 	/* Carica */
 	
@@ -174,8 +189,6 @@
 		
 		//view_alert("info",form_data,false);
 		
-		//alert("aa");
-		
 		//carica
 		for (var i in form_data) {
 			var obj = form_data[i];
@@ -195,10 +208,14 @@
 		
 		//notify icon
 		form_change_notify(true);
+		
+		//Check Button
+		enableBtnCreate();
 	}
 	
 	
 	/* Salva */
+	
 	function saveDoc(){
 		var form_data = $("form#mainform").serializeArray();
 		
@@ -229,318 +246,30 @@
 			data: 'action=put&id='+rawurlencode(currentID())+'&data='+rawurlencode(form_data_json)+''
 		});
 		
+		//Check Button
+		enableBtnCreate();
 	}
-	
 	
 	
 	/* Crea Minuta */ 
 	
-	
-	
-	
-  
-		// Attiva-Disattiva
-		function verify(id,approved){
-			$("#loading_img").show();
-
-			$.ajax({
-			url: "cambiaRowpub.php", 
-			cache: false,
-			context: document.body, 
-			success: function(data){
-						var delay = 5000;
-						if(data.indexOf('ER:')>-1){
-							$("#result").css('background-color','#DC143C');
-							$("#result").html(data);
-							delay = 60000;
-						}else{
-							$("#result").css('background-color','lightgreen');
-							$("#result").html(data);
-							//Reimposta UI
-							$("#row"+id).removeClass("verify");
-							$("#row"+id).addClass("active");
-							$("#row"+id+" td#comandi span.cmd").remove();
-							$("#row"+id+" td.modificabile span.prec").remove();
-							$("#loading_img").hide();
-						}
-						$("#result").show();
-						$("#loading_img").hide();
-						$("#result").delay(delay).fadeOut('5000');
-					 },
-			error: function(data){
-						$('#result').html("<h1>Errore del server</h1> "+data.responseText);
-					 },
-			data: 'id='+rawurlencode(id)+'&ver='+rawurlencode(approved)
-			});
-			
+	function enableBtnCreate(){
+		if($('input:radio:checked').length == $('.input-group-radio').size()){
+			//Ok
+			$('.btn-crea').prop('disabled', false);
+		} else {
+			// At least one group isn't checked
+			$('.btn-crea').prop('disabled', true);
 		}
-		
-		// Altri Campi
-		var originalcontent = "";
-		var chgnoteinuse = false;
-		
-		// Singola cella
-			function changeContent(tablecell)
-			{
-			  if(chgnoteinuse == false){
-				chgnoteinuse = true;
-				originalcontent=tablecell.innerHTML;
-				//tablecell.innerHTML = "<INPUT type=text name=newname onBlur=\"javascript:submitNewName(this);\" onKeyPress=\"javascript:changeContentKeyPress(event,this)\"  value=\""+tablecell.innerHTML+"\">";
-				tablecell.innerHTML = "<textarea type=text name=newname onBlur=\"javascript:submitNewName(this);\" onKeyPress=\"javascript:changeContentKeyPress(event,this)\">"+tablecell.innerHTML+"</textarea>";
-				tablecell.firstChild.focus();
-			  }
-			}
-			function changeContentKeyPress(e,textfield){
-				var key=e.keyCode || e.which;
-				if (key==27){
-				  textfield.parentNode.innerHTML=originalcontent;
-				  originalcontent = "";
-				  chgnoteinuse = false;
-				}else if (key==13){
-				  submitNewName(textfield);
-				  originalcontent = "";
-				  chgnoteinuse = false;
-				}
-			}
-			function submitNewName(textfield)
-			{
-			  //alert('cambia.php?id='+rawurlencode(textfield.parentNode.parentNode.getAttribute("id").replace("row",""))+'&campo='+rawurlencode(textfield.parentNode.getAttribute("name"))+'&val='+rawurlencode(textfield.value)+'');
-				if (textfield.value != originalcontent) {
-				  $("#loading_img").show();
-				  
-				  $.ajax({
-					url: "cambia.php", 
-					cache: false,
-					context: document.body, 
-					success: function(data){
-								var delay = 20000;
-								if(data.indexOf('ER:')>-1){
-								  $("#result").css('background-color','#DC143C');
-								  $("#result").html(data);
-								  textfield.parentNode.innerHTML=originalcontent;
-								  delay = 60000;
-								}else{
-								  $("#result").css('background-color','lightgreen');
-								  $("#result").html(data);
-								  textfield.parentNode.innerHTML=textfield.value;
-								}
-								$("#result").show();
-								$("#loading_img").hide();
-								$("#result").delay(delay).fadeOut('5000');
-							 },
-					error: function(data){
-								$('#result').html("<h1>Errore del server</h1> "+data.responseText);
-							 },
-					data: 'id='+rawurlencode(textfield.parentNode.parentNode.getAttribute("id").replace("row",""))+'&campo='+rawurlencode(textfield.parentNode.getAttribute("name"))+'&val='+rawurlencode(textfield.value)+''
-				  });
-				  
-				}else{
-				textfield.parentNode.innerHTML=originalcontent;
-				}
-				chgnoteinuse = false;
-			}
-		
-		// Singola Riga
-			var usingnode = "";
-			var nodes_original = new Array();
-			
-			function changeRowContent(tablecell)
-			{
-			  //Form Compose
-			  if(chgnoteinuse == false){
-				chgnoteinuse = true;
-				usingnode = tablecell.parentNode;
-				originalcontent=usingnode.innerHTML;
-				var nodes = usingnode.childNodes;
-				for(i=0; i<nodes.length; i+=1) {
-					var node = nodes[i];
-					if (node.nodeName == "TD") {
-						if (haveClass(node,'id')) {
-							nodes_original[i] = node.innerHTML;
-							node.innerHTML = node.innerHTML + "<form id='changerow'>";
-						}
-						if (haveClass(node,'modificabile')) {
-							nodes_original[i] = node.innerHTML;
-							//Prendi testo (no figli)
-							var text = "";
-							//text = node.textContent;
-							for (var s = 0; s < node.childNodes.length; s++)
-							if (node.childNodes[s].nodeType === 3)
-								text += node.childNodes[s].textContent || node.childNodes[s].innerHTML || node.childNodes[s].nodeValue || node.childNodes[s].wholeText || node.childNodes[s].data;
-							//TextArea
-							node.innerHTML = "<textarea type=text form=\"changerow\" name=\""+node.getAttribute("name")+"\" onKeyPress=\"javascript:changeRowContentKeyPress(event,this)\" maxlenght=\"100\" style=\"overflow:hidden;resize:none;\" >"+text+"</textarea>";
-						}
-						if (haveClass(node,'comandi')) {
-							nodes_original[i] = node.innerHTML;
-							node.innerHTML = "</form><span class='cmd save' onClick=\"submitNewRow()\">salva</span><span class='cmd canc' onClick=\"completeChangeRow(true)\">annulla</span>";
-						}
-						//Apply Autocomplete
-						applyAutoComplete();
-					}
-				}
-				
-			  }
-			}
-			
-			
-			
-			function haveClass(element, className){
-				return element.className && new RegExp("(^|\\s)" + className + "(\\s|$)").test(element.className);
-			}
-			
-			
-			
-			function changeRowContentKeyPress(e,textfield){
-				var key=e.keyCode || e.which;
-				if (key==27){
-				  completeChangeRow(true)
-				}else if (key==13){
-				  submitNewRow();
-				}
-			}
-			function submitNewRow()
-			{
-				$("#loading_img").show();
-				
-				//Parametri
-				var frm = $( "#changerow" );
-				var frm_data = $( "#changerow" ).serialize();
-					if (frm_data == "") {
-					var frm_container = frm.parents("tr");
-					var frm_txt = frm_container.find('textarea');
-					frm_txt.each(function(){
-						frm_data += "&"+$(this).serialize();
-					});
-				}
-
-				$("#loading_img").show();
-				
-				//Richiesta
-				$.ajax({
-				url: "cambiaRow.php", 
-				context: document.body, 
-				success: function(data){
-							var delay = 20000;
-							if(data.indexOf('ER:')>-1){
-							  $("#result").css('background-color','#DC143C');
-							  $("#result").html(data);
-							  completeChangeRow(true);
-							  delay = 60000;
-							}else{
-							  $("#result").css('background-color','lightgreen');
-							  $("#result").html(data);
-							  completeChangeRow();
-							}
-							$("#result").show();
-							$("#loading_img").hide();
-							$("#result").delay(delay).fadeOut('5000');
-						 },
-				error: function(data){
-							$('#result').html("<h1>Errore del server</h1> "+data.responseText);
-						 },
-				data: 'id='+rawurlencode(usingnode.getAttribute("id").replace("row","")) + '&' + $( "form#changerow" ).serialize()
-				});
-				
-			}
-			
-			function completeChangeRow(reset){
-				var nodes = usingnode.childNodes;
-				for(i=0; i<nodes.length; i+=1) {
-					var node = nodes[i];
-					if (node.nodeName == "TD") {
-						if (haveClass(node,'id')) {
-							node.innerHTML = nodes_original[i];
-						}
-						if (haveClass(node,'modificabile')) {
-							if(reset){
-								node.innerHTML = nodes_original[i];
-							}else{
-								node.innerHTML = node.getElementsByTagName("TEXTAREA")[0].value;
-							}
-						}
-						if (haveClass(node,'comandi')) {
-							node.innerHTML = nodes_original[i];
-						}
-					}
-				}
-				usingnode = "";
-				originalcontent = "";
-				nodes_original = new Array();
-				chgnoteinuse = false;
-			}
-		
-		 function applyAutoComplete() {
-			 
-			 monkeyPatchAutocomplete();
-			 
-			$( "textarea[name=ufficio]" ).autocomplete({
-			  source: "showhint.php",
-			  minLength: 2,
-			  select: function( event, ui ) {
-				/*
-				do nothing on selection
-				$('#warncontainer').append( ui.item ?
-				  "Selected: " + ui.item.value + " aka " + ui.item.id :
-				  "Nothing selected, input was " + this.value );*/
-			  }
-			});
- 
-			// This patches the autocomplete render so that
-			// matching items have the match portion highlighted.
-			function monkeyPatchAutocomplete() {
-
-			  // Don't really need to save the old fn,
-			  // but I could chain if I wanted to
-			  var oldFn = $.ui.autocomplete.prototype._renderItem;
-
-			  $.ui.autocomplete.prototype._renderItem = function( ul, item) {
-				  var re = new RegExp("\\b" + this.term, "i") ;
-				  var t = item.label.replace(re,"<span style='font-weight:bold;color:Blue;'>" + this.term + "</span>");
-				  return $( "<li></li>" )
-					  .data( "item.autocomplete", item )
-					  .append( "<a>" + t + "</a>" )
-					  .appendTo( ul );
-			  };
-			}
-
-		  };
-		  
-		  function clearSelection(){
-			if (window.getSelection) {
-			  if (window.getSelection().empty) {  // Chrome
-				window.getSelection().empty();
-			  } else if (window.getSelection().removeAllRanges) {  // Firefox
-				window.getSelection().removeAllRanges();
-			  }
-			} else if (document.selection) {  // IE?
-			  document.selection.empty();
-			}
-		  }
-	
-	
-	/* Stampa */	  
-		  
-	function preparePrint(){
-		load_data(10000,function () {
-			if (Browser.isIE){
-					//IE _ funziona?
-					var OLECMDID = 7;
-					/* OLECMDID values:
-					* 6 - print
-					* 7 - print preview
-					* 1 - open window
-					* 4 - Save As
-					*/
-					var PROMPT = 1; // 2 DONTPROMPTUSER
-					var WebBrowser = '<OBJECT ID="WebBrowser1" WIDTH=0 HEIGHT=0 CLASSID="CLSID:8856F961-340A-11D0-A96B-00C04FD705A2"></OBJECT>';
-					document.body.insertAdjacentHTML('beforeEnd', WebBrowser);
-					WebBrowser1.ExecWB(OLECMDID, PROMPT);
-					WebBrowser1.outerHTML = "";
-			} else {
-				window.print();
-			}
-		});
 	}
+	
+	function reqDoc(){
+		
+	}
+	
+	
+	
+
 
  
  
