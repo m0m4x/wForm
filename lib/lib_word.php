@@ -1188,6 +1188,9 @@ function get_data_val($data,$var){
 		return false;
 	}
 }
+function get_data_val_id($data,$id){
+	return get_data_val($data, [ 'tipo'=>'', 'id'=>$id ] ) ;
+}
 
 function get_var($form,$id){
 	foreach ($form as $var) {
@@ -1213,4 +1216,27 @@ function compare($in_bool, $operator, $neg, $expr, $value)
          throw new Exception("Invalid operator '$operator'");
    }
 }  
+
+//prendi il nome della variabile ritenuta 'soggetto' del form
+function doc_type_subject_var($vars){
+	//Seleziona nome cliente
+	$key_matr = [ 	['cliente','nome'],
+					['cliente','intestazione'],
+					['cliente'],
+					['soggetto','stipulante'],
+					['soggetto','firmatario']
+				];
+	$ret = false;
+	foreach ($vars as $var) {
+		if(array_key_exists("name",$var)){
+			foreach ($key_matr  as $key_array) {
+				$ret = true;
+				foreach ($key_array as $key)
+					if(strpos($var->name, $key) === false) { $ret = false; break; }
+				if($ret) return $var->name;
+			}
+		}
+	}
+	return $ret;
+}
 ?>

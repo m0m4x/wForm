@@ -159,11 +159,8 @@
 							if(data.substring(0, 1)=="#"){
 									view_alert("fail","Errore dal server: "+data,false);
 							}else {
-									//view_alert("fail","data:"+data+" "+getID(),false);
 									form_data = jQuery.parseJSON( data );
 									loadData(form_data);
-									
-									//view_alert("success","Caricamento completato!");
 							}
 						}
 					 },
@@ -206,6 +203,9 @@
 		
 		//Check Button
 		enableBtnCreate();
+		
+		//aggiorna UI
+		ui_update_subject(form_data);
 	}
 	
 	
@@ -229,6 +229,8 @@
 							viewSaveModal(data.substring(1));
 						}else if(data.substring(0, 1)=="=") {
 							view_alert("success","Documento salvato!");
+							//aggiorna UI
+							ui_update_subject(form_data);
 						}else{
 							view_alert("alert","L'operazione di salvataggio ha restituito il seguente messaggio: "+data,false);
 							form_change_notify(true);
@@ -258,6 +260,24 @@
 			})
 			// apri Modal
 			$('#commModal').modal('show');
+	}
+	
+	/* User Interface */
+	
+	function ui_update_subject(form_data){
+		if(typeof form_subject_var === 'undefined') return;
+		
+		form_data.forEach(function(entry) {
+			if("name" in entry){
+				if(entry.name == form_subject_var){
+					if(entry.value != ""){
+						$('#doc_title').html("Minuta "+entry.value.toUpperCase());
+						$('#doc_subtitle').html("("+currentMOD.toUpperCase()+")");
+					}
+				}
+			}
+		});
+		
 	}
 	
 	

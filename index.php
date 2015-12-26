@@ -51,7 +51,12 @@ $id = isset($_GET['id']) ? mysqli_real_escape_string($dbhandle,$_GET['id']) : nu
 	$form = form_load($doc_type,$p);
 	
 	//registra versione se non esiste (array to json in db)
+	//TODO
 	$doc_ver = 0;
+
+//DATI PER UI
+	$doc_subject = get_data_val_id($data,doc_type_subject_var($data));
+	//var_dump($doc_subject);
 	
 ?>
 
@@ -102,6 +107,8 @@ $id = isset($_GET['id']) ? mysqli_real_escape_string($dbhandle,$_GET['id']) : nu
 <script type="text/javascript">
 	var currentID = "<?php echo $id; ?>";
 	var currentMOD = "<?php echo $doc_type; ?>";
+	
+	var form_subject_var = "<?php echo doc_type_subject_var($data); ?>";
 </script>
 
 <body>
@@ -117,7 +124,7 @@ $id = isset($_GET['id']) ? mysqli_real_escape_string($dbhandle,$_GET['id']) : nu
                     <span class="icon-bar"></span>
                     <span class="icon-bar"></span>
                 </button>
-                <a class="navbar-brand" href="#">Creazione Minuta per Notaio</a>
+                <a class="navbar-brand" href="list.php">Creazione Minuta per Notaio</a>
             </div>
             <!-- Collect the nav links, forms, and other content for toggling -->
             
@@ -146,8 +153,9 @@ $id = isset($_GET['id']) ? mysqli_real_escape_string($dbhandle,$_GET['id']) : nu
 	<div class="container-fluid" style="margin:0px 10%">
 		
 		<div class="row">
-		  <div class="col-md-12">
-			  <h4>Minuta <?php echo strtoupper($doc_type); ?> </h4>
+		  <div class="col-md-12" style="margin:10px 0px;">
+				<h4 id="doc_title" style="display:inline;"> Minuta <?php echo strtoupper($doc_type); ?> </h4>
+				<span id="doc_subtitle" style="display:inline;font-size: 0.8em;"> </span>
 		  </div>
 		</div>
 		<div class="row">
@@ -274,7 +282,7 @@ $id = isset($_GET['id']) ? mysqli_real_escape_string($dbhandle,$_GET['id']) : nu
 					<div class="row">
 					  <div class="col-md-1"></div>
 					  <div class="col-md-10">
-						  <b>Salvataggio completato!</b>
+						  <span class="glyphicon glyphicon-ok pull-right" aria-hidden="true"></span> <b>Salvataggio completato!</b>
 					  </div>
 					</div>
 					<div class="row">
@@ -306,7 +314,7 @@ $id = isset($_GET['id']) ? mysqli_real_escape_string($dbhandle,$_GET['id']) : nu
 					</div>
 					<div class="row">
 					  <div class="col-md-1"></div>
-					  <div class="col-md-10">Puoi tornare in qualsiasi momento a tale indirizzo per modificare la minuta e generare un nuovo documento word.</div>
+					  <div class="col-md-10">Puoi tornare in qualsiasi momento per modificare i dati della minuta e generare un nuovo documento word.</div>
 					</div>
 				</div>
 		        <div class="row">
