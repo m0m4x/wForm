@@ -11,3 +11,15 @@ body {
 .dropdown-menu li a {
 	cursor: pointer; 
 }
+
+
+.tooltip-inner  {
+
+    white-space:pre; /* you can also try white-space: normal; */
+    max-width:none;
+
+}
+
+#noty_topRight_layout_container {
+	top:60px !important;
+}

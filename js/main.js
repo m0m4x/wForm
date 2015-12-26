@@ -9,8 +9,22 @@
 	/* Avvio */
 	
 		$(document).ready( function() { 
+			
 			//carica Documento
 			if(getID()!=""){ loadDoc(getID()); }
+			
+			//abilita Clipboard.js
+			var clipboard = new Clipboard('.btn-copy');
+				clipboard.on('success', function(e) {
+											e.clearSelection();
+											$(".btn-tooltip").attr('data-original-title','Link copiato negli appunti!');
+											$(".btn-tooltip").tooltip('show');
+											setTimeout(function () {
+												$(".btn-tooltip").tooltip('hide');
+											}, 1000);
+										});
+										
+			$(".btn-tooltip").tooltip({placement : 'top', trigger : 'manual' });
 
 		}); 
 		
@@ -68,36 +82,6 @@
 			*/
 		}
 		
-		function copyTextToClipboard(text) {
-		  var textArea = document.createElement("textarea");
-		  // Place in top-left corner of screen regardless of scroll position.
-		  textArea.style.position = 'fixed';
-		  textArea.style.top = 0;
-		  textArea.style.left = 0;
-		  // Ensure it has a small width and height. Setting to 1px / 1em
-		  // doesn't work as this gives a negative w/h on some browsers.
-		  textArea.style.width = '2em';
-		  textArea.style.height = '2em';
-		  // We don't need padding, reducing the size if it does flash render.
-		  textArea.style.padding = 0;
-		  // Clean up any borders.
-		  textArea.style.border = 'none';
-		  textArea.style.outline = 'none';
-		  textArea.style.boxShadow = 'none';
-		  // Avoid flash of white box if rendered for any reason.
-		  textArea.style.background = 'transparent';
-		  textArea.value = text;
-		  document.body.appendChild(textArea);
-		  textArea.select();
-		  try {
-			var successful = document.execCommand('copy');
-			var msg = successful ? 'successful' : 'unsuccessful';
-			console.log('Copying text command was ' + msg);
-		  } catch (err) {
-			console.log('Oops, unable to copy');
-		  }
-		  document.body.removeChild(textArea);
-		}
 		
 		//Notifiche
 		
@@ -123,6 +107,7 @@
 		//Alert
 		
 		function view_alert(type,message,delay){
+			if(typeof delay === 'undefined') delay = 2000;
 			var n = noty({
 				layout: 'topRight',
 				theme: 'relax',
@@ -172,11 +157,13 @@
 			success: function(data){
 						if(data!=""){
 							if(data.substring(0, 1)=="#"){
-								view_alert("fail","fail:"+data,false);
+									view_alert("fail","Errore dal server: "+data,false);
 							}else {
-									view_alert("fail","data:"+data+" "+getID(),false);
+									//view_alert("fail","data:"+data+" "+getID(),false);
 									form_data = jQuery.parseJSON( data );
 									loadData(form_data);
+									
+									//view_alert("success","Caricamento completato!");
 							}
 						}
 					 },
@@ -223,7 +210,6 @@
 	
 	
 	/* Salva */
-	
 	function saveDoc(){
 		var form_data = $("form#mainform").serializeArray();
 		
@@ -239,12 +225,12 @@
 						if(data.substring(0, 1)=="#"){
 							view_alert("fail",data,false);
 						}else if(data.substring(0, 1)==">") {
-							//redirect
-							window.location.replace("/"+basepath+"/"+data.substring(1));
+							//Crea Modal Salvataggio riuscito
+							viewSaveModal(data.substring(1));
 						}else if(data.substring(0, 1)=="=") {
-							view_alert("success","Operazione eseguita correttamente! ",false);
+							view_alert("success","Documento salvato!");
 						}else{
-							view_alert("alert","L'operazione ha restituito il seguente messaggio: "+data,false);
+							view_alert("alert","L'operazione di salvataggio ha restituito il seguente messaggio: "+data,false);
 							form_change_notify(true);
 						}
 					 },
@@ -256,6 +242,22 @@
 		
 		//Check Button
 		enableBtnCreate();
+	}
+	
+	function viewSaveModal(id){
+
+			// crea Modal
+			$('#data-copy').each(	function(){
+										this.textContent = this.textContent.replace('%url%', document.location.origin + '/' + basepath + '/' + id);
+									});
+			
+			// redirect alla chiusura
+			$('#commModal').on('hidden.bs.modal', function () {
+				//redirect
+				window.location.replace("/"+basepath+"/"+id);
+			})
+			// apri Modal
+			$('#commModal').modal('show');
 	}
 	
 	

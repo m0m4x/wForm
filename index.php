@@ -87,6 +87,9 @@ $id = isset($_GET['id']) ? mysqli_real_escape_string($dbhandle,$_GET['id']) : nu
 	
 	<!-- Main Js -->
     <script src="/wform/js/main.js"></script>
+	
+	<!-- Additional Js -->
+	<script src="/wform/js/clipboard/clipboard.min.js"></script>
 
     <!-- HTML5 Shim and Respond.js IE8 support of HTML5 elements and media queries -->
     <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
@@ -121,7 +124,7 @@ $id = isset($_GET['id']) ? mysqli_real_escape_string($dbhandle,$_GET['id']) : nu
 			<div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
                 <ul class="nav navbar-nav pull-right">
                     <li>
-                        <a href="#">Torna alla lista delle minute</a>
+                        <a href="#"></a>
                     </li>
                     <!--
 					<li>
@@ -191,6 +194,12 @@ $id = isset($_GET['id']) ? mysqli_real_escape_string($dbhandle,$_GET['id']) : nu
 					</div>
 				  </div>
 				  <!-- Row end -->
+				  
+				<div class="row" style="margin-bottom:20px">
+				  <div class="col-md-4"><button type="button" class="btn-salva btn btn-success btn-block" >Salva</button></div>
+				  <div class="col-md-4">&nbsp;</div>
+				  <div class="col-md-4">&nbsp;</div>
+				</div>
 						
 
 				  <!-- Row start -->
@@ -217,10 +226,6 @@ $id = isset($_GET['id']) ? mysqli_real_escape_string($dbhandle,$_GET['id']) : nu
 				</form>
 			</div>
 
-
-
-
-		
 		  <hr />
 		  </div>
 		</div>
@@ -231,11 +236,13 @@ $id = isset($_GET['id']) ? mysqli_real_escape_string($dbhandle,$_GET['id']) : nu
 		  <div class="col-md-4"><button type="button" class="btn-crea btn btn-primary btn-block" disabled="">Crea Minuta</button></div>
 		</div>
 		
+		<!--
 		<div class="row" style="margin-top:20px">
 		  <div class="col-md-4"><button type="button" class="btn-carica btn btn-success btn-block" >Carica</button></div>
 		  <div class="col-md-4">&nbsp;</div>
 		  <div class="col-md-4"></div>
 		</div>
+		-->
 		
 		<!-- Technical Data -->
 		<div class="row" style="margin:20px 0px;">
@@ -251,6 +258,72 @@ $id = isset($_GET['id']) ? mysqli_real_escape_string($dbhandle,$_GET['id']) : nu
 
     </div>
     <!-- /.container -->
+	
+	<!-- Modal -->
+	<div class="modal fade" id="commModal" tabindex="-1" role="dialog" aria-labelledby="commModalLabel">
+	  <div style="display:table;height: 100%;width: 100%;pointer-events:none;">
+	  <div class="modal-dialog" role="document" style="display: table-cell;vertical-align: middle;pointer-events:none;">
+		<div class="modal-content" style="width:inherit;height:inherit;margin: 0 auto;pointer-events:all;">
+		  <div class="modal-body">
+		        <div class="row">
+				  <div class="col-md-2 col-md-offset-10">
+					<button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+				  </div>
+				</div>
+				<div id="commModalContent">
+					<div class="row">
+					  <div class="col-md-1"></div>
+					  <div class="col-md-10">
+						  <b>Salvataggio completato!</b>
+					  </div>
+					</div>
+					<div class="row">
+					  <div class="col-md-12">&nbsp;</div>
+					</div>
+					<div class="row">
+					  <div class="col-md-1"></div>
+					  <div class="col-md-10">Questa minuta sarà sempre disponibile al seguente indirizzo:</div>
+					</div>
+					<div class="row">
+					  <div class="col-md-12">&nbsp;</div>
+					</div>
+					<div class="row">
+					  <div class="col-md-1">&nbsp;</div>
+					  <div class="col-md-10">
+						<blockquote>
+						<p>
+							<span id="data-copy">%url%</span>
+							<span class="pull-right">
+								<button type="button" class="btn btn-copy btn-default btn-sm btn-tooltip" aria-label="Left Align" 
+									style="padding-bottom: 1px;padding-top: 1px;vertical-align: text-bottom;"
+									title="Copia indirizzo!" data-clipboard-action="copy" data-clipboard-target="#data-copy" >
+									<span class="glyphicon glyphicon-link" aria-hidden="true"></span> 
+								</button>
+							</span>
+						</p>
+						</blockquote>
+					  </div>
+					</div>
+					<div class="row">
+					  <div class="col-md-1"></div>
+					  <div class="col-md-10">Puoi tornare in qualsiasi momento a tale indirizzo per modificare la minuta e generare un nuovo documento word.</div>
+					</div>
+				</div>
+		        <div class="row">
+				  <div class="col-md-12">&nbsp;</div>
+				</div>
+		        <div class="row">
+				  <div class="col-md-12">
+					  <span class="pull-right">
+						<button type="button" class="btn btn-primary" data-dismiss="modal">Prosegui</button>
+					  </span>
+				  </div>
+				</div>
+		  </div>
+		</div>
+	  </div>
+	  </div>
+	</div>
 
     <!-- Bootstrap Core JavaScript -->
 	<script src="/wform/js/bootstrap.min.js" 
