@@ -1,21 +1,48 @@
 <?php
-	//require_once("lib\word.php");
-	//print_r($_GET);
-	
-	//CARICA TIPOLOGIA
-	$doc_type = isset($_GET['f']) ? $_GET['f'] : null;
-	//$doc_type = ($doc_type != '') ? $doc_type : "co18";	//default co18
-	if(is_null($doc_type)){
-		//Form non richiesto: Scelta Minuta
-		//echo "Reindirizzo a scelta Minuta!";
-		header("Location: /wform/list.php");
-		die();	
+
+//LIBRERIE
+	//carica db
+	require_once("lib/lib_db.php");
+
+//FILTRO 
+$id = isset($_GET['id']) ? mysqli_real_escape_string($dbhandle,$_GET['id']) : null;
+	if(is_null($id)) die();
+
+//CHECK PARAMETRI
+	if(is_null($id)){
+		die();
 	}
-	if(!file_exists("doc/".$doc_type.".docx")){
-		//Form richiesto NON ESISTENTE:  
-		//echo "Reindirizzo a scelta Minuta!";
-		header("Location: /wform/list.php");
-		die();	
+	
+//CARICA MINUTA - DATI da ID
+	$sql = "SELECT * FROM `wform`.`form` WHERE id_form = '".$id."' ";
+	$stmt = mysqli_query( $dbhandle, $sql);
+	if ( !$stmt ){
+		 echo "#Error in statement execution.\n";
+		 die( print_r( mysqli_error($dbhandle), true));
+	}
+	$row = mysqli_fetch_array( $stmt, MYSQLI_ASSOC);
+	
+	//Check se è un modello
+	if(!isset($row)) {
+		
+		//non esiste id - carica da modello file
+		if(!file_exists("doc/".$id.".docx")){
+			//Form richiesto NON ESISTENTE:  
+			//echo "Reindirizzo a scelta Minuta!";
+			header("Location: /wform/list.php");
+			die();	
+		}
+		
+		$doc_type = $id;
+		$id = null;
+		
+	} else {
+		
+		//decode data
+		$data = json_decode($row['data']);
+		
+		$doc_type = $data[0]->mod;
+		
 	}
 	
 	//carica interprete word 
@@ -23,38 +50,8 @@
 	$p = form_load_text($doc_type);
 	$form = form_load($doc_type,$p);
 	
-	
 	//registra versione se non esiste (array to json in db)
 	$doc_ver = 0;
-	
-	//CARICA MINUTA - DATI da ID
-		//apri db
-		$dbhandle = new mysqli("127.0.0.1", "php", "php", "wform");
-		if ($dbhandle->connect_errno)
-			die("Failed to connect to MySQL: (" . $mysqli->connect_errno . ") " . $mysqli->connect_error);
-		if($dbhandle === false)
-			die("Servizio momentaneamente non disponibile! (missing db)"); 
-
-		//filtro dati
-		$id = isset($_GET['id']) ? mysqli_real_escape_string($dbhandle,$_GET['id']) : null;
-		$id = ($id != '') ? $id : null;
-		
-		//prendi dati
-		if(!is_null($id)){
-			$sql = "SELECT * FROM `wform`.`form` WHERE id_form = '".$id."' ";
-			$stmt = mysqli_query( $dbhandle, $sql);
-			if ( !$stmt ){
-				 echo "#Error in statement execution.\n";
-				 die( print_r( mysqli_error($dbhandle), true));
-			}
-			$doc_var = mysqli_fetch_array( $stmt, MYSQLI_ASSOC);
-			if(!isset($doc_var)) {
-				//Reindirizza a nuova Minuta
-				//echo "Nuova minuta!";
-				header("Location: /wform/".$doc_type);
-				die();	
-			}
-		}
 	
 ?>
 
@@ -99,6 +96,10 @@
     <![endif]-->
 </head>
 
+<script type="text/javascript">
+	var currentID = "<?php echo $id; ?>";
+	var currentMOD = "<?php echo $doc_type; ?>";
+</script>
 
 <body>
 
@@ -150,7 +151,7 @@
 			<small>
 			<div class="col-md-8">
 			<?php if(!is_null($id)){ ?>
-			 Creata alle ore <?php echo date("H:i", strtotime($doc_var['created'])); ?> del <?php echo date("d/m/Y", strtotime($doc_var['created'])); ?>
+			 Creata alle ore <?php echo date("H:i", strtotime($row['created'])); ?> del <?php echo date("d/m/Y", strtotime($row['created'])); ?>
 			<?php } ?> &nbsp;
 			</div>
 			<div class="col-md-4 text-right">

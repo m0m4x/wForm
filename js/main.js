@@ -3,12 +3,14 @@
  * 
  * 
  */	
+	var basepath = "wform";
+ 
  
 	/* Avvio */
 	
 		$(document).ready( function() { 
 			//carica Documento
-			if(currentID()!=""){ loadDoc(currentID()); }
+			if(getID()!=""){ loadDoc(getID()); }
 
 		}); 
 		
@@ -39,25 +41,31 @@
 			.replace(/\*/g, '%2A');
 		}
 		
-		function currentMOD() {
+		function getMOD() {
+			return currentMOD;
+			/*
 			var href = document.location.href;
-			var parm = href.substring(href.indexOf("wform")+6).split("/");
+			var parm = href.substring(href.indexOf(basepath)+6).split("/");
 			if(parm.length>1){
 				return parm[0];
 			} else {
 				return "";
 			}
+			*/
 		}
 		
-		function currentID() {
+		function getID() {
+			return currentID;
+			/*
 			var href = document.location.href;
-			var parm = href.substring(href.indexOf("wform")+6).split("/");
+			var parm = href.substring(href.indexOf(basepath)+6).split("/");
 			if(parm.length>1){
 				return parm[1];
 			} else {
 				//alert("n");
 				return "";
 			}
+			*/
 		}
 		
 		function copyTextToClipboard(text) {
@@ -94,7 +102,7 @@
 		//Notifiche
 		
 		function form_change_notify(saved){
-			if(currentID()==""){
+			if(getID()==""){
 				//	alert_form_notsaved
 				$("#alert_form_modified").hide();
 				$("#alert_form_saved").hide();
@@ -158,7 +166,7 @@
 		var form_data;
 		
 		$.ajax({
-			url: "/wform/lib/req_db.php", 
+			url: "/"+basepath+"/lib/req_db.php", 
 			cache: false,
 			context: document.body, 
 			success: function(data){
@@ -166,7 +174,7 @@
 							if(data.substring(0, 1)=="#"){
 								view_alert("fail","fail:"+data,false);
 							}else {
-									view_alert("fail","data:"+data+" "+currentID(),false);
+									view_alert("fail","data:"+data+" "+getID(),false);
 									form_data = jQuery.parseJSON( data );
 									loadData(form_data);
 							}
@@ -175,7 +183,7 @@
 			error: function(data){
 						view_alert("fail","Errore generico:"+data.responseText,false);
 					 },
-			data: 'action=get&id='+rawurlencode(currentID())+''
+			data: 'action=get&id='+rawurlencode(getID())+''
 		});
 	}
 	
@@ -220,11 +228,11 @@
 		var form_data = $("form#mainform").serializeArray();
 		
 		//Add System data
-		form_data.unshift({id:currentID(), mod:currentMOD()});
+		form_data.unshift({id:getID(), mod:getMOD()});
 		
 		var form_data_json = JSON.stringify(form_data);	//console.log(form_data_json);
 		$.ajax({
-			url: "/wform/lib/req_db.php",
+			url: "/"+basepath+"/lib/req_db.php",
 			cache: false,
 			context: document.body, 
 			success: function(data){
@@ -232,7 +240,7 @@
 							view_alert("fail",data,false);
 						}else if(data.substring(0, 1)==">") {
 							//redirect
-							window.location.replace(data.substring(1));
+							window.location.replace("/"+basepath+"/"+data.substring(1));
 						}else if(data.substring(0, 1)=="=") {
 							view_alert("success","Operazione eseguita correttamente! ",false);
 						}else{
@@ -243,7 +251,7 @@
 			error: function(data){
 						view_alert("fail","Errore generico:"+data.responseText,false);
 					 },
-			data: 'action=put&id='+rawurlencode(currentID())+'&data='+rawurlencode(form_data_json)+''
+			data: 'action=put&id='+rawurlencode(getID())+'&data='+rawurlencode(form_data_json)+''
 		});
 		
 		//Check Button

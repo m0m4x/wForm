@@ -4,4 +4,4 @@ RewriteCond $1 !-f
 RewriteCond $1 !-d
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond %{REQUEST_FILENAME} !-d
-RewriteRule ^([^\/]*)(?:[\/]([^\/]*)[\/]?)?$ /wform/index.php?f=$1&id=$2 [L,QSA]
+RewriteRule ^([^\/]*)(?:[\/]([^\/]*)[\/]?)?$ /wform/index.php?id=$1&var=$2 [L,QSA]
