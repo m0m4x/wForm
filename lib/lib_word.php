@@ -1222,7 +1222,6 @@ function doc_type_subject_var($vars){
 	//Seleziona nome cliente
 	$key_matr = [ 	['cliente','nome'],
 					['cliente','intestazione'],
-					['cliente'],
 					['soggetto','stipulante'],
 					['soggetto','firmatario']
 				];

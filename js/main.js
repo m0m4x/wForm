@@ -25,6 +25,7 @@
 										});
 										
 			$(".btn-tooltip").tooltip({placement : 'top', trigger : 'manual' });
+			//$(".btn-crea-tooltip").tooltip({placement : 'top' });
 
 		}); 
 		
@@ -82,28 +83,6 @@
 			*/
 		}
 		
-		
-		//Notifiche
-		
-		function ui_update_changes_notify(saved){
-			if(getID()==""){
-				//	alert_form_notsaved
-				$("#alert_form_modified").hide();
-				$("#alert_form_saved").hide();
-				$("#alert_form_notsaved").show();
-			}else if(!saved){
-				//	alert_form_modified
-				$("#alert_form_notsaved").hide();
-				$("#alert_form_saved").hide();
-				$("#alert_form_modified").show();
-			} else{
-				//	alert_form_saved
-				$("#alert_form_notsaved").hide();
-				$("#alert_form_modified").hide();
-				$("#alert_form_saved").show();
-			}
-		}
-		
 		//Alert
 		
 		function view_alert(type,message,delay){
@@ -134,7 +113,7 @@
 			
 			//notifica cambiamento
 			$("form :input").change(function() {
-			  ui_update_changes_notify(false);
+			  ui_update_updtstatus(false);
 			});
 			
 			//dropdown testo in input
@@ -198,14 +177,12 @@
 			
 		}
 		
-		//notify icon
-		ui_update_changes_notify(true);
-		
 		//Check Button
-		enableBtnCreate();
+		ui_update_enablecreate();
 		
 		//aggiorna UI
-		ui_update_subject(form_data);
+		ui_update_updtstatus(true);
+		ui_update_title(form_data);
 	}
 	
 	
@@ -223,18 +200,23 @@
 			context: document.body, 
 			success: function(data){
 						if(data.substring(0, 1)=="#"){
+							//Salvataggio fallito, Errore gestito
 							view_alert("fail",data,false);
 						}else if(data.substring(0, 1)==">") {
-							//Crea Modal Salvataggio riuscito
+							//Ok, Crea Modal per Reindirizzamento (primo salvataggio)
 							viewSaveModal(data.substring(1));
 						}else if(data.substring(0, 1)=="=") {
+							//Ok, Salvataggio completato
 							view_alert("success","Documento salvato!");
 							//aggiorna UI
-							ui_update_subject(form_data);
-							ui_update_changes_notify(true);
+							ui_update_title(form_data);
+							ui_update_updtstatus(true);
 						}else{
-							view_alert("alert","L'operazione di salvataggio ha restituito il seguente messaggio: "+data,false);
-							ui_update_changes_notify(true);
+							//Salvataggio fallito, Errore non gestito
+							view_alert("alert","Errore non gestito: L'operazione di salvataggio ha restituito il seguente messaggio: "+data,false);
+							//aggiorna UI
+							ui_update_title(form_data);
+							ui_update_updtstatus(true);
 						}
 					 },
 			error: function(data){
@@ -244,12 +226,14 @@
 		});
 		
 		//Check Button
-		enableBtnCreate();
+		ui_update_enablecreate();
 	}
 	
 	function viewSaveModal(id){
 
-			// crea Modal
+			// view Save modal content
+			$('#commModalContent_save').show();
+			$('#commModalContent_create').hide();
 	
 			// applica url
 			$('#data-copy').each(	function(){
@@ -261,52 +245,114 @@
 				//redirect
 				window.location.replace("/"+basepath+"/"+id);
 			})
-			// apri Modal
+			// show Modal
 			$('#commModal').modal('show');
 	}
 	
-	/* User Interface */
-	
-	function ui_update_subject(form_data){
-		if(typeof form_subject_var === 'undefined') return;
-		if(form_subject_var == '') {
-			$('#doc_title').html('Minuta '+currentMOD.toUpperCase());
-			$('#doc_subtitle').html('');
-		} else {
-			form_data.forEach(function(entry) {
-				if("name" in entry){
-					if(entry.name == form_subject_var){
-						if(entry.value != ""){
-							$('#doc_title').html('Minuta '+entry.value.toUpperCase());
-							$('#doc_subtitle').html('('+currentMOD.toUpperCase()+')');
-						} else {
-							$('#doc_title').html('Minuta '+currentMOD.toUpperCase());
-							$('#doc_subtitle').html('');
-						}
-					}
-				}
-			});
-		};
-		
-		
-	}
-	
-	
-	/* Crea Minuta */ 
-	
-	function enableBtnCreate(){
-		if($('input:radio:checked').length == $('.input-group-radio').size()){
-			//Ok
-			$('.btn-crea').prop('disabled', false);
-		} else {
-			// At least one group isn't checked
-			$('.btn-crea').prop('disabled', true);
-		}
-	}
-	
+	/*Request Doc */
 	function reqDoc(){
 		
+			// view Create modal content
+			$('#commModalContent_save').hide();
+			$('#commModalContent_create').show();
+			
+			// show Modal
+			$('#commModal').modal('show');
+			
 	}
+		function genWord(){
+			if(getID()=='') return;
+			window.location.href = "lib/req_word.php?action=gen&format=docx&id="+getID();
+		}
+		function genPdf(){
+			return;
+			if(getID()=='') return;
+			window.location.href = "lib/req_word.php?action=gen&format=pdf&id="+getID();
+		}
+	
+	/* User Interface */
+	
+		//titolo minuta
+		function ui_update_title(form_data){
+			if(typeof form_subject_var === 'undefined') return;
+			if(form_subject_var == '') {
+				$('#doc_title').html('Minuta '+currentMOD.toUpperCase());
+				$('#doc_subtitle').html('');
+			} else {
+				form_data.forEach(function(entry) {
+					if("name" in entry){
+						if(entry.name == form_subject_var){
+							if(entry.value != ""){
+								$('#doc_title').html(''+entry.value.toUpperCase());
+								$('#doc_subtitle').html('('+currentMOD.toUpperCase()+')');
+							} else {
+								$('#doc_title').html('Minuta '+currentMOD.toUpperCase());
+								$('#doc_subtitle').html('');
+							}
+						}
+					}
+				});
+			};
+		}
+		
+		//update status 
+		function ui_update_updtstatus(saved){
+			if(getID()==""){
+				//	alert_form_notsaved
+				$("#alert_form_modified").hide();
+				$("#alert_form_saved").hide();
+				$("#alert_form_notsaved").show();
+			}else if(!saved){
+				//	alert_form_modified
+				$("#alert_form_notsaved").hide();
+				$("#alert_form_saved").hide();
+				$("#alert_form_modified").show();
+			} else{
+				//	alert_form_saved
+				$("#alert_form_notsaved").hide();
+				$("#alert_form_modified").hide();
+				$("#alert_form_saved").show();
+			}
+		}
+		
+		//alert exit page
+		function ui_alertonleave(e) {
+			if( $("#alert_form_modified").is(":visible") ){
+				//Alert salvataggio dei dati
+				
+				if(!e) e = window.event;
+				//e.cancelBubble is supported by IE - this will kill the bubbling process.
+				e.cancelBubble = true;
+				e.returnValue = 'Attenzione, i dati non salvati potrebbero andare persi!\nSei sicuro di voler continuare?';
+
+				//e.stopPropagation works in Firefox.
+				if (e.stopPropagation) {
+					e.stopPropagation();
+					e.preventDefault();
+				}
+			}
+		}
+		window.onbeforeunload=ui_alertonleave; 
+		
+		//check enable button create
+		function ui_update_enablecreate(){
+			if(getID()==''){
+				$('.btn-crea').prop('disabled', true);
+				//$('.btn-crea-tooltip').tooltip('enable');
+			}else {
+				if($('input:radio:checked').length == $('.input-group-radio').size()){
+					//Ok
+					$('.btn-crea').prop('disabled', false);
+					//$('.btn-crea-tooltip').tooltip('disable');
+				} else {
+					// At least one group isn't checked
+					$('.btn-crea').prop('disabled', true);
+					//$('.btn-crea-tooltip').tooltip('enable');
+				}
+			}
+		}
+	
+	
 	
 	
 	

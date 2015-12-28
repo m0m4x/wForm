@@ -159,7 +159,7 @@ $id = isset($_GET['id']) ? mysqli_real_escape_string($dbhandle,$_GET['id']) : nu
 		
 		<div class="row">
 		  <div class="col-md-12" style="margin:10px 0px;">
-				<h4 id="doc_title" style="display:inline;"> Minuta <?php echo strtoupper($doc_type); ?> </h4>
+				<h4 id="doc_title" style="display:inline;"> <?php if(is_null($id)){ echo "Minuta ".strtoupper($doc_type); } ?> &nbsp; </h4>
 				<span id="doc_subtitle" style="display:inline;font-size: 0.8em;"> </span>
 		  </div>
 		</div>
@@ -172,8 +172,8 @@ $id = isset($_GET['id']) ? mysqli_real_escape_string($dbhandle,$_GET['id']) : nu
 			</div>
 			<div class="col-md-4 text-right">
 				
-				<div id="alert_form_notsaved" style="display:none;" class="has-warning text-danger"> <span class="glyphicon glyphicon-alert" aria-hidden="true"></span> Il Documento non è ancora stato salvato! </div>
-				<div id="alert_form_modified" style="display:none;" class="has-warning text-warning"> <span class="glyphicon glyphicon-alert" aria-hidden="true"></span> Sono presenti modifiche non salvate! </div>
+				<div id="alert_form_notsaved" style="display:none;" class="has-warning text-info"> <span class="glyphicon glyphicon-alert" aria-hidden="true"></span> Il Documento non è ancora stato salvato! </div>
+				<div id="alert_form_modified" style="display:none;" class="has-warning text-danger"> <span class="glyphicon glyphicon-alert" aria-hidden="true"></span> Sono presenti modifiche non salvate! </div>
 				<div id="alert_form_saved" style="display:none;" class="has-warning text-success"> <span class="glyphicon glyphicon-ok-sign" aria-hidden="true"></span> Non sono presenti modifiche non salvate! </div>
 			</div>
 			</small>
@@ -246,7 +246,11 @@ $id = isset($_GET['id']) ? mysqli_real_escape_string($dbhandle,$_GET['id']) : nu
 		<div class="row">
 		  <div class="col-md-4"><button type="button" class="btn-salva btn btn-success btn-block" >Salva</button></div>
 		  <div class="col-md-4">&nbsp;</div>
-		  <div class="col-md-4"><button type="button" class="btn-crea btn btn-primary btn-block" disabled="">Crea Minuta</button></div>
+		  <div class="col-md-4">
+			<div class="btn-crea-tooltip" style="display:block;" data-title="Prima di creare la minuta è necessario completare tutte le scelte nella sezione configurazione!">
+				<button type="button" class="btn-crea btn btn-primary btn-block" disabled="">Crea Minuta</button> &nbsp;
+			</div>
+		  </div>
 		</div>
 		
 		<!--
@@ -283,11 +287,11 @@ $id = isset($_GET['id']) ? mysqli_real_escape_string($dbhandle,$_GET['id']) : nu
 					<button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
 				  </div>
 				</div>
-				<div id="commModalContent">
+				<div id="commModalContent_save">
 					<div class="row">
 					  <div class="col-md-1"></div>
 					  <div class="col-md-10">
-						  <span class="glyphicon glyphicon-ok pull-right" aria-hidden="true"></span> <b>Salvataggio completato!</b>
+						  <span class="glyphicon glyphicon-saved" aria-hidden="true"></span> <b>Salvataggio completato!</b>
 					  </div>
 					</div>
 					<div class="row">
@@ -319,18 +323,60 @@ $id = isset($_GET['id']) ? mysqli_real_escape_string($dbhandle,$_GET['id']) : nu
 					</div>
 					<div class="row">
 					  <div class="col-md-1"></div>
-					  <div class="col-md-10">Puoi tornare in qualsiasi momento per modificare i dati della minuta e generare un nuovo documento word.</div>
+					  <div class="col-md-10">Puoi tornare in qualsiasi momento per modificare i dati della minuta e generare un nuovo documento word/pdf.</div>
+					</div>
+					<div class="row">
+					  <div class="col-md-12">&nbsp;</div>
+					</div>
+					<div class="row">
+					  <div class="col-md-12">
+						  <span class="pull-right">
+							<button type="button" class="btn btn-primary" data-dismiss="modal">Prosegui</button>
+						  </span>
+					  </div>
 					</div>
 				</div>
-		        <div class="row">
-				  <div class="col-md-12">&nbsp;</div>
-				</div>
-		        <div class="row">
-				  <div class="col-md-12">
-					  <span class="pull-right">
-						<button type="button" class="btn btn-primary" data-dismiss="modal">Prosegui</button>
-					  </span>
-				  </div>
+				<div id="commModalContent_create" style="">
+					<div class="row">
+					  <div class="col-md-1"></div>
+					  <div class="col-md-10">
+						  <span class="glyphicon glyphicon-flash" aria-hidden="true"></span> <b>Esporta Minuta</b>
+					  </div>
+					</div>
+					<div class="row">
+					  <div class="col-md-12">&nbsp;</div>
+					</div>
+					<div class="row">
+					  <div class="col-md-1"></div>
+					  <div class="col-md-10">Scegli il formato di esportazione:</div>
+					</div>
+					<div class="row">
+					  <div class="col-md-12">&nbsp;</div>
+					</div>
+					<div class="row">
+					  <div class="col-md-2">&nbsp;</div>
+					  <div class="col-md-4 text-center"><a class="link-word" href="javascript:genWord()"><img src="img/docx-icon.png" alt="Word"></a></div>
+					  <div class="col-md-4 text-center"><a class="link-pdf" disabled="" href="javascript:genPdf()"><img src="img/pdf-icon.png" alt="Pdf"></a></div>
+					  <div class="col-md-2">&nbsp;</div>
+					</div>
+					<div class="row">
+					  <div class="col-md-12">&nbsp;</div>
+					</div>
+					<div class="row">
+					  <div class="col-md-1">&nbsp;</div>
+					  <div class="col-md-11">Potrai sempre tornare alla pagina precedente per modificare i dati della minuta e generare un nuovo documento.</div>
+					</div>
+					<div class="row">
+					  <div class="col-md-12">&nbsp;</div>
+					</div>
+					<div class="row">
+					  <div class="col-md-12">
+						  <span class="pull-right">
+							<button type="button" class="btn btn-default" data-dismiss="modal">Chiudi</button>
+						  </span>
+					  </div>
+					</div>
+
 				</div>
 		  </div>
 		</div>

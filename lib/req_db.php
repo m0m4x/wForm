@@ -25,6 +25,11 @@ switch ($action) {
 		if(is_null($id)){
 			//crea
 			$id = getToken(5);
+			//aggiorna data (inserendo id)
+			$data = json_decode($_GET['data']);
+			$data[0]->id = $id;
+			$data = mysqli_real_escape_string($dbhandle,json_encode($data));
+			//crea query
 			$sql = "INSERT INTO `wform`.`form` (`id_form`, `data`, `created`) VALUES ('".$id."', '".$data."', NOW());";
 			//esegui
 			$stmt = mysqli_query( $dbhandle, $sql);
@@ -76,14 +81,26 @@ function crypto_rand_secure($min, $max)
 
 function getToken($length)
 {
-    $token = "";
-    $codeAlphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-    $codeAlphabet.= "abcdefghijklmnopqrstuvwxyz";
-    $codeAlphabet.= "0123456789";
-    $max = strlen($codeAlphabet) - 1;
-    for ($i=0; $i < $length; $i++) {
-        $token .= $codeAlphabet[crypto_rand_secure(0, $max)];
-    }
+	global $dbhandle;
+	
+	$token = "";
+	do {
+		
+		//generate
+		$codeAlphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+		$codeAlphabet.= "abcdefghijklmnopqrstuvwxyz";
+		$codeAlphabet.= "0123456789";
+		$max = strlen($codeAlphabet) - 1;
+		for ($i=0; $i < $length; $i++) {
+			$token .= $codeAlphabet[crypto_rand_secure(0, $max)];
+		}
+		
+		//check Existence
+		$result = mysqli_query($dbhandle ,"SELECT id_form FROM `wform`.`form` WHERE id_form = '" . $token . "'"); 
+		$count = mysqli_num_rows($result); 
+	
+	} while ($count > 0);
+	
     return $token;
 }
 

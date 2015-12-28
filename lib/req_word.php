@@ -52,7 +52,7 @@ switch ($action) {
 			//prendi parm
 			//var_dump($data);
 			//var_dump($data[0]->id);
-			//var_dump($data[0]->mod);
+			//var_dump($data[0]->mod);exit;
 			
 			$doc_id = $data[0]->id;
 			$doc_type = $data[0]->mod;
