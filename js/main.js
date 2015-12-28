@@ -85,7 +85,7 @@
 		
 		//Notifiche
 		
-		function form_change_notify(saved){
+		function ui_update_changes_notify(saved){
 			if(getID()==""){
 				//	alert_form_notsaved
 				$("#alert_form_modified").hide();
@@ -134,7 +134,7 @@
 			
 			//notifica cambiamento
 			$("form :input").change(function() {
-			  form_change_notify(false);
+			  ui_update_changes_notify(false);
 			});
 			
 			//dropdown testo in input
@@ -199,7 +199,7 @@
 		}
 		
 		//notify icon
-		form_change_notify(true);
+		ui_update_changes_notify(true);
 		
 		//Check Button
 		enableBtnCreate();
@@ -231,9 +231,10 @@
 							view_alert("success","Documento salvato!");
 							//aggiorna UI
 							ui_update_subject(form_data);
+							ui_update_changes_notify(true);
 						}else{
 							view_alert("alert","L'operazione di salvataggio ha restituito il seguente messaggio: "+data,false);
-							form_change_notify(true);
+							ui_update_changes_notify(true);
 						}
 					 },
 			error: function(data){
@@ -249,6 +250,8 @@
 	function viewSaveModal(id){
 
 			// crea Modal
+	
+			// applica url
 			$('#data-copy').each(	function(){
 										this.textContent = this.textContent.replace('%url%', document.location.origin + '/' + basepath + '/' + id);
 									});
@@ -266,17 +269,25 @@
 	
 	function ui_update_subject(form_data){
 		if(typeof form_subject_var === 'undefined') return;
-		
-		form_data.forEach(function(entry) {
-			if("name" in entry){
-				if(entry.name == form_subject_var){
-					if(entry.value != ""){
-						$('#doc_title').html("Minuta "+entry.value.toUpperCase());
-						$('#doc_subtitle').html("("+currentMOD.toUpperCase()+")");
+		if(form_subject_var == '') {
+			$('#doc_title').html('Minuta '+currentMOD.toUpperCase());
+			$('#doc_subtitle').html('');
+		} else {
+			form_data.forEach(function(entry) {
+				if("name" in entry){
+					if(entry.name == form_subject_var){
+						if(entry.value != ""){
+							$('#doc_title').html('Minuta '+entry.value.toUpperCase());
+							$('#doc_subtitle').html('('+currentMOD.toUpperCase()+')');
+						} else {
+							$('#doc_title').html('Minuta '+currentMOD.toUpperCase());
+							$('#doc_subtitle').html('');
+						}
 					}
 				}
-			}
-		});
+			});
+		};
+		
 		
 	}
 	

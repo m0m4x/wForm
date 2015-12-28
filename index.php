@@ -33,6 +33,7 @@ $id = isset($_GET['id']) ? mysqli_real_escape_string($dbhandle,$_GET['id']) : nu
 			die();	
 		}
 		
+		$data = null;
 		$doc_type = $id;
 		$id = null;
 		
@@ -40,7 +41,6 @@ $id = isset($_GET['id']) ? mysqli_real_escape_string($dbhandle,$_GET['id']) : nu
 		
 		//decode data
 		$data = json_decode($row['data']);
-		
 		$doc_type = $data[0]->mod;
 		
 	}
@@ -55,8 +55,13 @@ $id = isset($_GET['id']) ? mysqli_real_escape_string($dbhandle,$_GET['id']) : nu
 	$doc_ver = 0;
 
 //DATI PER UI
-	$doc_subject = get_data_val_id($data,doc_type_subject_var($data));
-	//var_dump($doc_subject);
+	if(!is_null($id)){
+		$doc_subject_var = doc_type_subject_var($data);
+		//var_dump($doc_subject);
+	} else {
+		$doc_subject_var = "";
+	}
+		
 	
 ?>
 
@@ -108,7 +113,7 @@ $id = isset($_GET['id']) ? mysqli_real_escape_string($dbhandle,$_GET['id']) : nu
 	var currentID = "<?php echo $id; ?>";
 	var currentMOD = "<?php echo $doc_type; ?>";
 	
-	var form_subject_var = "<?php echo doc_type_subject_var($data); ?>";
+	var form_subject_var = "<?php echo $doc_subject_var; ?>";
 </script>
 
 <body>
