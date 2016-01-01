@@ -111,8 +111,8 @@ sort($docs);
 					$('#table_history tbody').append(	'<tr data-href="'+h_id[index]+'">'+
 														'	<td width="1%"></td>'+
 														'	<td width="10%" ><small><em>/'+h_id[index]+'</em></small></td>'+
-														'	<td >'+h_data[index][1]+'</td>'+
-														'	<td ><small>'+h_data[index][0]+'</small></td>'+
+														'	<td width="54%">'+h_data[index][1]+'</td>'+
+														'	<td width="10%"><small>'+h_data[index][0]+'</small></td>'+
 														'	<td width="20%"><small><em>'+h_data[index][2]+'</em></small></td>'+
 														'	<td width="5%">'+(h_data[index][3]? "<a href='lib/req_word.php?action=gen&format=docx&id="+h_id[index]+"'><span class='glyphicon glyphicon-download-alt' aria-hidden='true'></span></a>" : "" )+'</td>'+
 														'</tr>');
