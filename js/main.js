@@ -23,9 +23,13 @@
 												$(".btn-tooltip").tooltip('hide');
 											}, 1000);
 										});
-										
+			
+			//tooltip
 			$(".btn-tooltip").tooltip({placement : 'top', trigger : 'manual' });
 			//$(".btn-crea-tooltip").tooltip({placement : 'top' });
+			
+			//history
+			
 
 		}); 
 		
@@ -183,6 +187,9 @@
 		//aggiorna UI
 		ui_update_updtstatus(true);
 		ui_update_title(form_data);
+		
+		//salva history
+		history_set( getID(), getMOD() , ui_text('title',form_data) );
 	}
 	
 	
@@ -227,6 +234,9 @@
 		
 		//Check Button
 		ui_update_enablecreate();
+		
+		//salva history
+		history_set( getID(), getMOD() , ui_text('title',form_data) );
 	}
 	
 	function viewSaveModal(id){
@@ -275,24 +285,38 @@
 		//titolo minuta
 		function ui_update_title(form_data){
 			if(typeof form_subject_var === 'undefined') return;
+			$('#doc_title').html(ui_text('title',form_data));
+			$('#doc_subtitle').html(ui_text('subtitle',form_data));
+		}
+		function ui_text(type,form_data){
+			var ret;
 			if(form_subject_var == '') {
-				$('#doc_title').html('Minuta '+currentMOD.toUpperCase());
-				$('#doc_subtitle').html('');
+				if(type=='title')
+					ret = 'Minuta '+currentMOD.toUpperCase();
+				else if(type=='subtitle')
+					ret = '';
 			} else {
 				form_data.forEach(function(entry) {
 					if("name" in entry){
 						if(entry.name == form_subject_var){
 							if(entry.value != ""){
-								$('#doc_title').html(''+entry.value.toUpperCase());
-								$('#doc_subtitle').html('('+currentMOD.toUpperCase()+')');
+								if(type=='title') {
+									ret = entry.value;
+								} else if(type=='subtitle') {
+									ret = '('+currentMOD.toUpperCase()+')';
+								}
 							} else {
-								$('#doc_title').html('Minuta '+currentMOD.toUpperCase());
-								$('#doc_subtitle').html('');
+								if(type=='title') {
+									ret = 'Minuta '+currentMOD.toUpperCase();
+								} else if(type=='subtitle') {
+									ret = '';
+								}
 							}
 						}
 					}
 				});
 			};
+			return ret;
 		}
 		
 		//update status 
@@ -353,9 +377,59 @@
 		}
 	
 	
+	/* History */
+	function history_set(id,mod,title) {
+		if(id === '') return;
 	
+		// elimina storage
+		//$.jStorage.deleteKey("h_id");
+		//$.jStorage.deleteKey("h_data");
 	
+		// prendi dati da storage
+		h_id = $.jStorage.get("h_id", [])
+		h_data = $.jStorage.get("h_data", [])
+
+		// elimina voce corrente
+		var found = jQuery.inArray(id, h_id);
+		if (found >= 0) {
+			// Element was found, remove it.
+			h_id.splice(found, 1);
+			h_data.splice(found, 1);
+		}
+
+		var currentdate = new Date(); 
+		var datetime = formatDate(currentdate);
+		
+		// aggiungi voce corrente
+		h_id.unshift(id);
+		h_data.unshift([	mod.toUpperCase(),
+							title, 
+							datetime,
+							!$('.btn-crea').prop('disabled')
+						]);
+						
+		// limita a 20
+		h_id = h_id.slice(0,20);
+		h_data= h_data.slice(0,20);
+		
+		// salva in storage
+		$.jStorage.set("h_id", h_id)
+		$.jStorage.set("h_data", h_data)
 	
+	}
+	function formatDate(date) {
+	  var hours = date.getHours();
+	  var minutes = date.getMinutes();
+	  hours = hours % 12;
+	  hours = hours ? hours : 12; // the hour '0' should be '12'
+	  hours = pad2(hours);
+	  minutes = minutes < 10 ? '0'+minutes : minutes;
+	  var strTime = hours + ':' + minutes;
+	  return pad2(date.getDate()) + "/" + date.getMonth()+1 + "/" + date.getFullYear() + "  " + strTime;
+	}
+	function pad2(number) {
+		 return (number < 10 ? '0' : '') + number
+	}
 
 
  

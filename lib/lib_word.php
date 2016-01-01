@@ -8,6 +8,49 @@ ini_set('xdebug.var_display_max_data', 1024);
 header("Expires: Sat, 26 Jul 1997 05:00:00 GMT"); // Date in the past*/
 //header('Content-Type: text/html; charset=UTF-8'); 
 
+function docx_load_info($doc_type){
+	
+	$archiveFile = dirname(__FILE__)."/../doc/".$doc_type.".docx";
+	
+	//check file existence
+	if(!file_exists($archiveFile)) die($archiveFile);
+	
+	//XML Load
+	$xml = new DOMDocument();
+		$zip = new ZipArchive;
+		if (true === $zip->open($archiveFile)) {
+			if (($index = $zip->locateName("docProps/core.xml")) !== false) {
+				$data = $zip->getFromIndex($index);
+				$zip->close();
+				
+				// Load XML from a string
+				// Skip errors and warnings
+				$xml->loadXML($data, LIBXML_NOENT | LIBXML_XINCLUDE | LIBXML_NOERROR | LIBXML_NOWARNING);
+				
+				// Debug - Return data without XML formatting tags
+				// echo strip_tags($xml->saveXML());
+				
+				// Debug - Return completed xml document
+				// $xml->preserveWhiteSpace = true;
+				// $xml->formatOutput = true;
+				// $xml_string = $xml->saveXML();
+				// echo $xml_string;
+				
+			} else {
+				$zip->close();
+				die("error reading docx...");
+			}
+		}
+
+	//XML Traversing
+	$infos = Array();
+	$propNodes = $xml->getElementsByTagName('*');
+	foreach ( $propNodes as $prop){
+		$infos[$prop->nodeName] = $prop->nodeValue;
+	}
+		
+	return $infos;
+}
 
 function form_load_text($doc_type){
 	

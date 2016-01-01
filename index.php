@@ -28,7 +28,7 @@ $id = isset($_GET['id']) ? mysqli_real_escape_string($dbhandle,$_GET['id']) : nu
 		//non esiste id - carica da modello file
 		if(!file_exists("doc/".$id.".docx")){
 			//Form richiesto NON ESISTENTE:  
-			//echo "Reindirizzo a scelta Minuta!";
+			echo "Reindirizzo a scelta Minuta!";
 			header("Location: /wform/list.php");
 			die();	
 		}
@@ -100,6 +100,9 @@ $id = isset($_GET['id']) ? mysqli_real_escape_string($dbhandle,$_GET['id']) : nu
 	
 	<!-- Additional Js -->
 	<script src="/wform/js/clipboard/clipboard.min.js"></script>
+	
+	<script src="/wform/js/jstorage/json2.js"></script>
+	<script src="/wform/js/jstorage/jstorage.min.js"></script>
 
     <!-- HTML5 Shim and Respond.js IE8 support of HTML5 elements and media queries -->
     <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
@@ -135,15 +138,12 @@ $id = isset($_GET['id']) ? mysqli_real_escape_string($dbhandle,$_GET['id']) : nu
             
 			<div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
                 <ul class="nav navbar-nav pull-right">
-                    <li>
-                        <a href="#"></a>
-                    </li>
                     <!--
 					<li>
-                        <a href="#">Services</a>
+                        <a href="">Link 1</a>
                     </li>
-                    <li>
-                        <a href="#">Contact</a>
+					<li>
+                        <a href="">Link 2</a>
                     </li>
 					-->
                 </ul>
