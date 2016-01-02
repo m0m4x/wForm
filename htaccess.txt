@@ -1,4 +1,6 @@
 RewriteEngine on
+DirectoryIndex list.php
+
 RewriteCond $1 !^(index\.php|resources|robots\.txt)
 RewriteCond $1 !-f
 RewriteCond $1 !-d

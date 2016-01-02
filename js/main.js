@@ -194,7 +194,7 @@
 	
 	
 	/* Salva */
-	function saveDoc(){
+	function saveDoc(callback_function){
 		var form_data = $("form#mainform").serializeArray();
 		
 		//Add System data
@@ -225,6 +225,8 @@
 							ui_update_title(form_data);
 							ui_update_updtstatus(true);
 						}
+						//callback functiona after save
+						if(typeof callback_function == 'function') {  callback_function(); } else { /*window.alert(" callback non definito");*/  }
 					 },
 			error: function(data){
 						view_alert("fail","Errore generico:"+data.responseText,false);
@@ -252,7 +254,9 @@
 			
 			// redirect alla chiusura
 			$('#commModal').on('hidden.bs.modal', function () {
-				//redirect
+				
+				//Redirect
+				ui_alert_disable = true;
 				window.location.replace("/"+basepath+"/"+id);
 			})
 			// show Modal
@@ -260,25 +264,46 @@
 	}
 	
 	/*Request Doc */
-	function reqDoc(){
-		
-			// view Create modal content
-			$('#commModalContent_save').hide();
-			$('#commModalContent_create').show();
+	function reqDoc(handlemod){
+			handlemod = handlemod || "";
 			
+			//Save before requestDoc
+			if(handlemod == "save"){
+					saveDoc(reqDoc);
+					return;
+			}
+			
+			//View Dialogs
+			if(ui_alertonleave_haschg() && handlemod != "ignore"){
+				// view Alert
+				$('#commModalContent_save').hide();
+				$('#commModalContent_create').hide();
+				$('#commModalContent_create_alert').show();
+			}else {
+				// view Create
+				$('#commModalContent_save').hide();
+				$('#commModalContent_create').show();
+				$('#commModalContent_create_alert').hide();
+			}
+
 			// show Modal
 			$('#commModal').modal('show');
 			
 	}
 		function genWord(){
 			if(getID()=='') return;
+			//Redirect
+			ui_alert_disable = true;
 			window.location.href = "lib/req_word.php?action=gen&format=docx&id="+getID();
 		}
 		function genPdf(){
-			return;
+			return; //non disponibile
 			if(getID()=='') return;
+			//Redirect
+			ui_alert_disable = true;
 			window.location.href = "lib/req_word.php?action=gen&format=pdf&id="+getID();
 		}
+
 	
 	/* User Interface */
 	
@@ -340,8 +365,10 @@
 		}
 		
 		//alert exit page
+		var ui_alert_disable = false;
 		function ui_alertonleave(e) {
-			if( $("#alert_form_modified").is(":visible") ){
+			if (ui_alert_disable) return;
+			if( ui_alertonleave_haschg() ){
 				//Alert salvataggio dei dati
 				
 				if(!e) e = window.event;
@@ -355,6 +382,9 @@
 					e.preventDefault();
 				}
 			}
+		}
+		function ui_alertonleave_haschg(){
+			return $("#alert_form_modified").is(":visible") || $("#alert_form_notsaved").is(":visible");
 		}
 		window.onbeforeunload=ui_alertonleave; 
 		

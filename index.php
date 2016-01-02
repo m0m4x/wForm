@@ -356,7 +356,7 @@ $id = isset($_GET['id']) ? mysqli_real_escape_string($dbhandle,$_GET['id']) : nu
 					<div class="row">
 					  <div class="col-md-2">&nbsp;</div>
 					  <div class="col-md-4 text-center"><a class="link-word" href="javascript:genWord()"><img src="img/docx-icon.png" alt="Word"></a></div>
-					  <div class="col-md-4 text-center"><a class="link-pdf" disabled="" href="javascript:genPdf()"><img src="img/pdf-icon.png" alt="Pdf"></a></div>
+					  <div class="col-md-4 text-center"><a class="link-pdf disabled" href="javascript:genPdf()"><img src="img/pdf-icon-greyed.png" alt="Pdf"></a></div>
 					  <div class="col-md-2">&nbsp;</div>
 					</div>
 					<div class="row">
@@ -373,6 +373,49 @@ $id = isset($_GET['id']) ? mysqli_real_escape_string($dbhandle,$_GET['id']) : nu
 					  <div class="col-md-12">
 						  <span class="pull-right">
 							<button type="button" class="btn btn-default" data-dismiss="modal">Chiudi</button>
+						  </span>
+					  </div>
+					</div>
+				</div>
+				<div id="commModalContent_create_alert" style="">
+					<div class="row">
+					  <div class="col-md-1"></div>
+					  <div class="col-md-10">
+						  <span class="glyphicon glyphicon-warning-sign" aria-hidden="true"></span> <b>Attenzione!</b>
+					  </div>
+					</div>
+					<div class="row">
+					  <div class="col-md-12">&nbsp;</div>
+					</div>
+					<div class="row">
+					  <div class="col-md-10 col-md-offset-1">Sono presenti modifiche non salvate. Vuoi salvarle prima di procedere con la creazione del documento?</div>
+					</div>
+					<div class="row">
+					  <div class="col-md-12">&nbsp;</div>
+					</div>
+					<div class="row">
+					  <div class="col-md-2">&nbsp;</div>
+					  <div class="col-md-4 text-center">
+								<button type="button" class="btn btn-default" aria-label="Left Align" 
+									title="Salva le modifiche" onclick="javascript:reqDoc('save')">
+									Salva le modifiche!
+								</button>
+					  </div>
+					  <div class="col-md-4 text-center">
+								<button type="button" class="btn btn-default" aria-label="Left Align" 
+									title="Ignora le modifiche" onclick="javascript:reqDoc('ignore')">
+									Ignora le modifiche
+								</button>
+					  </div>
+					  <div class="col-md-2">&nbsp;</div>
+					</div>
+					<div class="row">
+					  <div class="col-md-12">&nbsp;</div>
+					</div>
+					<div class="row">
+					  <div class="col-md-12">
+						  <span class="pull-right">
+							<button type="button" class="btn btn-default" data-dismiss="modal">Annulla</button>
 						  </span>
 					  </div>
 					</div>
