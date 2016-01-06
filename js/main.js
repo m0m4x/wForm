@@ -246,6 +246,7 @@
 			// view Save modal content
 			$('#commModalContent_save').show();
 			$('#commModalContent_create').hide();
+			$('#commModalContent_create_alert').hide();
 	
 			// applica url
 			$('#data-copy').each(	function(){

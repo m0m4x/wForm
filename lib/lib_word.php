@@ -233,7 +233,6 @@ function form_load($doc_type,&$p){
 								$opcode=$op[0];
 								
 								//	0.Parse Info aggiuntive e pulisci
-								
 									// Labels
 									$info_label = ""; 
 									$info_label_atext = "";
@@ -246,7 +245,6 @@ function form_load($doc_type,&$p){
 										if(array_key_exists(0,$t)) $info_label = $t[0];
 										if(array_key_exists(1,$t)) $info_label_atext = $t[1];
 									}
-									
 									//Forced Values
 									$info_val_type = "";
 									$info_val = ""; 
@@ -260,9 +258,8 @@ function form_load($doc_type,&$p){
 										$info_val_type = $inf[1];
 										$info_val = $inf[2];
 									}
-									
 									//Clean
-									$opcode = preg_replace("/[\(][^\)]*[\)]/", "", $opcode);
+									$opcode = preg_replace("/[\(].*[\)]/", "", $opcode);
 									$opcode = preg_replace('!\s+!', ' ', $opcode);
 								
 								//	1.Estrai Opcode
