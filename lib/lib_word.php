@@ -38,7 +38,7 @@ function docx_load_info($doc_type){
 				
 			} else {
 				$zip->close();
-				die("error reading docx...");
+				die("error reading docx - ". $archiveFile);
 			}
 		}
 
@@ -816,7 +816,7 @@ function text_compose($form,&$p,$data){
 				$var_value = strtolower(get_data_val($data,$var));
 				
 				//Sostituisci
-				$pattern = "/[\[](".$var_id.")[\s]*[\]]/i";
+				$pattern = '/[\[]('.$var_id.')[\s]*[\]]/i';
 				$p = preg_replace($pattern, $var_value, $p);
 			}
 			
@@ -1232,7 +1232,7 @@ function get_data_val($data,$var){
 	}
 }
 function get_data_val_id($data,$id){
-	return get_data_val($data, [ 'tipo'=>'', 'id'=>$id ] ) ;
+	return get_data_val($data, Array('tipo'=>'', 'id'=>$id ) ) ;
 }
 
 function get_var($form,$id){
@@ -1263,11 +1263,11 @@ function compare($in_bool, $operator, $neg, $expr, $value)
 //prendi il nome della variabile ritenuta 'soggetto' del form
 function doc_type_subject_var($vars){
 	//Seleziona nome cliente
-	$key_matr = [ 	['cliente','nome'],
-					['cliente','intestazione'],
-					['soggetto','stipulante'],
-					['soggetto','firmatario']
-				];
+	$key_matr = Array(	Array('cliente','nome'),
+						Array('cliente','intestazione'),
+						Array('soggetto','stipulante'),
+						Array('soggetto','firmatario')
+				);
 	$ret = false;
 	foreach ($vars as $var) {
 		if(array_key_exists("name",$var)){

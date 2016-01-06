@@ -193,7 +193,7 @@ $id = isset($_GET['id']) ? mysqli_real_escape_string($dbhandle,$_GET['id']) : nu
 					  <div class="panel panel-default">
 						<div class="panel-heading clearfix">
 						  <i class="icon-calendar"></i>
-						  <h3 class="panel-title">configurazione</h3>
+						  <h3 class="panel-title">Configurazione di base</h3>
 						</div>
 					   
 						<div class="panel-body">
@@ -221,7 +221,7 @@ $id = isset($_GET['id']) ? mysqli_real_escape_string($dbhandle,$_GET['id']) : nu
 					  <div class="panel panel-default">
 						<div class="panel-heading clearfix">
 						  <i class="icon-calendar"></i>
-						  <h3 class="panel-title">valori</h3>
+						  <h3 class="panel-title">Tabella dei dati</h3>
 						</div>
 					   
 						<div class="panel-body">
