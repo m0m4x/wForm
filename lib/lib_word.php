@@ -248,7 +248,6 @@ function form_load($doc_type,&$p){
 										if(array_key_exists(0,$t)) $info_label = $t[0];
 										if(array_key_exists(1,$t)) $info_label_atext = $t[1];
 									}
-									
 									//Forced Values
 									$info_val_type = "";
 									$info_val = ""; 
