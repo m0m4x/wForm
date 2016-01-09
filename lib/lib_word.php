@@ -211,11 +211,13 @@ function form_load($doc_type,&$p){
 	//Reset Global Var
 	$form=Array();
 	$stack_se=Array();
+	
+	$check_addcond = Array(); // ci scrivo le condizioni aggiuntive, solo per vedere se alla fine sono state definite singolarmente.
 
 	//Parsing codes
 	$pattern = "/[\[][^\]]*[\]]/";	// [*]
-	$p = preg_replace_callback(	$pattern, 
-							function ($op) use (&$form,&$stack_se)  {
+	$p = preg_replace_callback_offset(	$pattern, 
+							function ($op) use (&$form,&$stack_se,&$check_addcond)  {
 								//Generate field $f in $form
 								// (id) 
 								// (tipo) 
@@ -228,12 +230,12 @@ function form_load($doc_type,&$p){
 								//debug
 								//var_dump($op);
 								//var_dump($stack_se);
-								
+
 								// Imposta valori default							
 								$opcode=$op[0];
+								$opcode_offset = $op[1];
 								
 								//	0.Parse Info aggiuntive e pulisci
-								
 									// Labels
 									$info_label = ""; 
 									$info_label_atext = "";
@@ -260,9 +262,8 @@ function form_load($doc_type,&$p){
 										$info_val_type = $inf[1];
 										$info_val = $inf[2];
 									}
-									
 									//Clean
-									$opcode = preg_replace("/[\(][^\)]*[\)]/", "", $opcode);
+									$opcode = preg_replace("/[\(].*[\)]/", "", $opcode);
 									$opcode = preg_replace('!\s+!', ' ', $opcode);
 								
 								//	1.Estrai Opcode
@@ -300,15 +301,26 @@ function form_load($doc_type,&$p){
 											//se piu parole => dropdown
 											$tipo = "se";
 										
-										//In caso di AND/OR prendi solo il primo come id
+										//Esamina oggetto della condizione - AND/OR con soggetti multipli
+										// es. se aaa|bbb allora fai questo
+										//estrai SOLO il primo
+										$idmultiple = "";
 										$pattern = '/[|&]/';
 										$match = preg_split( $pattern, $id);
 										$id = $match[0];
+										// CHECK - per controllo su condizioni aggiuntive
+										foreach($match as $m){
+											if(substr($m,0,1)=="!") 
+												$check_addcond[] = substr($m,1); 
+											else 
+												$check_addcond[] = $m;
+										}
 										
 										//Valore della condizione
+										//non letto in fase di generazione del documento - solo per creare Form
 										//negazione -> inverti val
-											$neg = check_val_neg($id);
-											if($neg) $id = str_replace("!","",$id);
+										$neg = check_val_neg($id);
+										if($neg) $id = str_replace("!","",$id);
 										$val="";
 										if($tipo == "se"){
 											if($neg) $val = "0"; else $val = "1";
@@ -319,6 +331,7 @@ function form_load($doc_type,&$p){
 										//Crea stack SE
 										$s = array(	"id" 	=> $id,
 													"tipo"	=> $tipo,
+													"offset"	=> $opcode_offset,
 													"label"	=> $info_label, "info"	=> $info_label_atext,
 													"sect" 	=> array( array( 	"id" => $id , 
 																				"val" => $val , 
@@ -432,14 +445,20 @@ function form_load($doc_type,&$p){
 										//ID sistema - skip
 										if(($id=="articolo")||(($id=="comma")))
 											break;
+								
+										//Get se stack for conditionated values
+										//echo $id."=>".get_last_se($stack_se)."<br>\n";
+										$validity[] = get_last_se($stack_se);
 										
 										//check if "id" exist
 										if (!array_key_exists($id,$form) ) {	//is_null(search_form($opcodes[0], $form))
 											//not exist: create
 											$f = array(	"id" => $opcodes[0],
 														"tipo" => "var",
+														"offset"	=> $opcode_offset,
 														"label" => $info_label, 
 														"info" => $info_label_atext,
+														"valid" => $validity, 
 														"val" => $info_val,
 														"val_tipo" => $info_val_type
 														);
@@ -450,6 +469,7 @@ function form_load($doc_type,&$p){
 											//exist: add position
 											$f = search_form($opcodes[0], $form);
 											if($info_label!="") $f["label"] = $info_label;
+											$f["valid"] = array_merge($f["valid"], $validity);
 											$form[$id] = $f; //Replace not add
 										}
 											/*
@@ -487,6 +507,26 @@ function form_load($doc_type,&$p){
 							$p,
 							PREG_OFFSET_CAPTURE );
 	
+	//Check
+	
+		//Se non chiusi
+		//var_dump($stack_se);
+		if(count($stack_se)>0){
+			foreach($stack_se as $se){
+				echo "<pre class='xdebug-var-dump' dir='ltr'>ERRORE nel template <b>'".$doc_type."'</b>: Sezione <font color='#cc0000'>[se ".$se['id']."]</font> incompleta!  (carattere nr:".$se['offset'].")</pre>";
+			}
+		}
+		
+		//Condition not defined
+		//var_dump($check_addcond);
+		$check_addcond = array_unique($check_addcond);
+		foreach($check_addcond as $cond){
+			if(substr($cond,0,1)=="!") $cond = substr($cond,1);
+			if (!array_key_exists($cond,$form) ) {
+				echo "<pre class='xdebug-var-dump' dir='ltr'>ERRORE nel template <b>'".$doc_type."'</b>: La condizione ausiliaria <font color='#cc0000'>'".$cond."'</font> viene utilizzata senza definizione!</pre>";
+			}
+		}
+	
 	//var_dump($form);exit;
 	//echo str_replace("<par>","<br>",$p);
 	
@@ -494,6 +534,17 @@ function form_load($doc_type,&$p){
 	//usort($form, "form_sort");
 	
 	return $form;
+}
+
+function get_last_se($stack_se){
+	if(count($stack_se)==0){
+		return '*';
+	}else {
+		//var_dump($stack_se);
+		$last_se = end($stack_se);
+		$last_sect = end($last_se['sect']);
+		return $last_sect['id']."=".$last_sect['val'];
+	}
 }
 
 function form_sect($form){
@@ -667,16 +718,43 @@ function form_se($form){
 	
 }
 	
-function form_var($form){
-	
+function form_var(){
+	global $form;
+		
 	//Only 'var'
 	foreach ($form as $field) {
-		//print_r($field);
+		if($field["tipo"]=="var") {
+			print_var($field);
+		}
+	}
+	
+}
+
+function print_var($field,$add=false){
+		global $form;
+		global $form_validityr;
+	
+		//E' un aggiunta ad un campo precedente?
 		$id = $field['id'];
-		$info_label = ($field['label']!="" ? $field['label'] : $field['id']); 
+		if($add){
+			 $info_label="...in lettere";
+			 $pos1=5;
+			 $pos2=5;
+		}else{
+			 $info_label = ($field['label']!="" ? $field['label'] : $field['id']); 
+			 $pos1=4;
+			 $pos2=6;
+		}
 		$info_label = str_replace("_", " ", $info_label);
 		
-				
+		//suffisso _lettere
+		$suffisso = "_lettere";
+		$f_add = false;
+		if(!$add){
+			if ( endsWith($id, "_lettere") && array_key_exists(substr($id,0,strlen($suffisso)*-1),$form)) return;
+			if (array_key_exists($id."_lettere",$form) ) { $f_add=true; }
+		}
+			
 		//Gestisci Valori
 		$forced_val = "";
 		if(array_key_exists("val",$field)){
@@ -692,95 +770,144 @@ function form_var($form){
 				}
 			}
 		}
-	
-/*	
-
-		*/
 		
-		//Switch
-		switch ($field["tipo"]) {
-				case "var":	//variable
-					//var_dump($field);
-					//Seleziona tipologia
-					if($field['val_tipo']=="="){
-						//Dropdown
-						
-						?>
-							<!-- input con menu -->
-							<div class="form-group form-group-sm">
-								<label for="<?php echo $id; ?>" class="control-label col-md-4"><?php echo $info_label; ?></label>
-								<div class="col-md-6">
-									<div class="input-group input-group-sm">
-									  <input type="text" class="form-control" name="<?php echo $id; ?>" id="<?php echo $id; ?>" placeholder="<?php echo $id; ?>" value="">
-									  <div class="input-group-btn">
-										<button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"> <span class="caret"></span></button>
-										<ul class="dropdown-menu dropdown-menu-right">
-										<?php
-											foreach($forced_val as $val){
-												echo '<li><a input="'.$id.'">'.$val."</a></li>";
-											}
-										?>
-										</ul>
-									  </div>
-									</div>
-								</div>
-							</div>
-							
-
-							<!-- scelta tra valori 
-							<div class="form-group form-group-sm radio_buttons optional user_horizontal_sex">
-								<label class="radio_buttons control-label col-md-4"><?php echo $info_label; ?></label>
-								<div class="col-md-6">
-								<input type="text" class="form-control" name="<?php echo $id; ?>" id="<?php echo $id; ?>" placeholder="<?php echo $id; ?>" value="">
-								<?php
-								
-									foreach($forced_val as $value){
-										$val_id = $id."_".$value;
-										$val_name= $id;
-										?>
-										
-											<label class="radio-inline radio-inline">
-											
-												<input type="radio" name="<?php echo $val_name; ?>" id="<?php echo $val_id; ?>" value="<?php echo $value; ?>"> <?php echo str_replace("_"," ", $value); ?>
-											</label>
-										<?php
-									}
-								
-								?>
-								<?php if($field['info']!=""){ ?><p class="help-block"> <?php echo $field['info']; ?> </p><?php } ?>
-								</div>
-							</div>
-							-->
-						
-						<?php
-						
-					} else {
-						//Input normale
-						
-						?>
-							<!-- variable -->
-							<div class="form-group form-group-sm">
-								<label for="<?php echo $id; ?>" class="control-label col-md-4"><?php echo $info_label; ?></label>
-								<div class="col-md-6">
-									<input type="text" class="form-control" name="<?php echo $id; ?>" id="<?php echo $id; ?>" placeholder="<?php echo $id; ?>" value="<?php echo $forced_val;?>">
-									<?php if($field['info']!=""){ ?><span class="help-block"> <?php echo $field['info']; ?> </span><?php } ?>
-								</div>
-							</div>
-						<?php
-						
-					}
+		//Mostra sempre o nascondi
+		$hide = form_var_to_hide($id);
+			
+		//var_dump($form_validityr['*']);
+		
+		//Seleziona tipologia
+		if($field['val_tipo']=="="){
+			//Dropdown
+			
+			?>
+				<!-- input con menu -->
+				<div class="form-group form-group-sm" style="<?php if($hide) echo "display:none;";?>">
+					<label for="<?php echo $id; ?>" class="control-label col-md-<?php echo $pos1; ?>"><?php echo $info_label; ?></label>
+					<div class="col-md-<?php echo $pos2; ?>">
+						<div class="input-group input-group-sm">
+						  <input type="text" class="form-control" name="<?php echo $id; ?>" id="<?php echo $id; ?>" placeholder="<?php echo $id; ?>" value="">
+						  <div class="input-group-btn">
+							<button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"> <span class="caret"></span></button>
+							<ul class="dropdown-menu dropdown-menu-right">
+							<?php
+								foreach($forced_val as $val){
+									echo '<li><a input="'.$id.'">'.$val."</a></li>";
+								}
+							?>
+							</ul>
+						  </div>
+						</div>
+					</div>
+				</div>
 				
-
-					break;
+			<?php
+			
+		} else {
+			//Input normale
+			
+			?> 
+				<!-- variable -->
+				<div class="form-group form-group-sm" style="<?php if($hide) echo "display:none;"; if($f_add) echo "margin-bottom:5px !important;";?>" >
+					<label for="<?php echo $id; ?>" class="control-label col-md-<?php echo $pos1; ?>"><?php echo $info_label; ?></label>
+					<div class="col-md-<?php echo $pos2; ?>">
+						<input type="text" class="form-control" name="<?php echo $id; ?>" id="<?php echo $id; ?>" placeholder="<?php echo $id; ?>" value="<?php echo $forced_val;?>">
+						<?php if($field['info']!=""){ ?><span class="help-block"> <?php echo $field['info']; ?> </span><?php } ?>
+					</div>
+				</div>
+			<?php
+			
 		}
 		
+		// suffisso _lettere
+		if ($f_add) {
+			$field_add = search_form($id."_lettere",$form);
+			print_var($field_add,true);
+		}
 		
-	}
-	
 }
 
 
+function form_validity($form){
+	
+	$val = Array();
+	$val['*'] = Array();
+	
+	foreach ($form as $field) {
+		
+		$id = $field['id'];
+		if($field['tipo']=="var"){
+			
+			//echo $id;
+			//var_dump($field["valid"]);
+			
+			// validità costruisci array
+			// da : id da attivare -> campo -> val
+			// a : campo -> valore -> id da attivare
+			if(!array_key_exists("id",$val['*'])){
+				foreach ($field["valid"] as $condition){
+					if($condition=='*')
+						$val['*'][] = $id;
+					else{
+						$s = explode("=",$condition);
+						$campo = $s[0];
+						$valore = $s[1];
+						$val[$campo][$valore][]=$id;
+					}
+				}						
+			}
+			
+		}
+		
+	}
+	
+	//TODO cancella eventuali record in $val[][][$id]
+	foreach($val['*'] as $field){
+		foreach ($val as $k1 => &$v){
+			if ($k1!= '*')
+			foreach($v as $k2 => &$id){
+				if($id==$field){
+					//echo $k1.">".$k2." ".$id."-".$field."<br>\n";
+					unset($v[$k2]);
+				}
+			}
+		}
+	}
+	
+	//var_dump($val);
+	//exit;
 
+	return $val;
+}
+
+function form_var_to_hide($id){
+	global $form_validityr;
+	global $form;
+	
+	//determina se mostrare per defualt una variabile oppure nasconderla
+	
+	// variabili presenti nel corpo del testo (non dentro a dei se)
+	if(in_array($id,$form_validityr['*'])){
+		return false;
+	}
+	
+	//variabili in un se (checkbox) a valore 0 (che è il default per un checkbox)
+	foreach($form_validityr as $choice_id=>$choice_values){
+		//se è un checkbox
+		if(array_key_exists($choice_id,$form))
+		if($form[$choice_id]['tipo'] == "se"){
+			if(array_key_exists("0",$choice_values)){
+				foreach($choice_values['0'] as $var_id){
+					if($id==$var_id){
+						return false;
+					}
+				}	
+			}		
+		}
+	}
+	
+	return true;
+}
 
 //DEBUG
 
@@ -796,6 +923,7 @@ function text_compose($form,&$p,$data){
 	
 		//Debug
 		//var_dump($field);exit;
+		//echo($p);exit;
 		//var_dump($form);exit;
 		//echo str_replace("<par>","<br>",$listp);
 		$dbg_choice = false;
@@ -1280,5 +1408,54 @@ function doc_type_subject_var($vars){
 		}
 	}
 	return $ret;
+}
+
+
+
+
+
+
+
+function preg_replace_callback_offset($pattern, $callback, $subject, $limit = -1, &$count = 0) {
+    if (is_array($subject)) {
+        foreach ($subject as &$subSubject) {
+            $subSubject = preg_replace_callback_offset($pattern, $callback, $subSubject, $limit, $subCount);
+            $count += $subCount;
+        }
+        return $subject;
+    }
+    if (is_array($pattern)) {
+        foreach ($pattern as $subPattern) {
+            $subject = preg_replace_callback_offset($subPattern, $callback, $subject, $limit, $subCount);
+            $count += $subCount;
+        }
+        return $subject;
+    }
+    $limit  = max(-1, (int)$limit);
+    $count  = 0;
+    $offset = 0;
+    $buffer = (string)$subject;
+    while ($limit === -1 || $count < $limit) {
+        $result = preg_match($pattern, $buffer, $matches, PREG_OFFSET_CAPTURE, $offset);
+        if (FALSE === $result) return FALSE;
+        if (!$result) break;
+        $pos     = $matches[0][1];
+        $len     = strlen($matches[0][0]);
+        $replace = call_user_func($callback, $matches[0]);
+        $buffer = substr_replace($buffer, $replace, $pos, $len);
+        $offset = $pos + strlen($replace);
+        $count++;
+    }
+    return $buffer;
+}
+
+
+function startsWith($haystack, $needle) {
+    // search backwards starting from haystack length characters from the end
+    return $needle === "" || strrpos($haystack, $needle, -strlen($haystack)) !== FALSE;
+}
+function endsWith($haystack, $needle) {
+    // search forward starting from end minus needle length characters
+    return $needle === "" || (($temp = strlen($haystack) - strlen($needle)) >= 0 && strpos($haystack, $needle, $temp) !== FALSE);
 }
 ?>

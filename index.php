@@ -49,6 +49,9 @@ $id = isset($_GET['id']) ? mysqli_real_escape_string($dbhandle,$_GET['id']) : nu
 	require_once("lib/lib_word.php");
 	$p = form_load_text($doc_type);
 	$form = form_load($doc_type,$p);
+	//Relazioni di validità dei campi
+	$form_validityr = form_validity($form);
+	//var_dump($form_validityr);
 	
 	//registra versione se non esiste (array to json in db)
 	//TODO
@@ -61,6 +64,8 @@ $id = isset($_GET['id']) ? mysqli_real_escape_string($dbhandle,$_GET['id']) : nu
 	} else {
 		$doc_subject_var = "";
 	}
+	
+	
 		
 	
 ?>
@@ -117,6 +122,8 @@ $id = isset($_GET['id']) ? mysqli_real_escape_string($dbhandle,$_GET['id']) : nu
 	var currentMOD = "<?php echo $doc_type; ?>";
 	
 	var form_subject_var = "<?php echo $doc_subject_var; ?>";
+	
+	var form_validity_rel = <?php echo json_encode($form_validityr); ?>;
 </script>
 
 <body>
@@ -227,7 +234,7 @@ $id = isset($_GET['id']) ? mysqli_real_escape_string($dbhandle,$_GET['id']) : nu
 						<div class="panel-body">
 						  <form id="mainform" class="form-horizontal row-border" action="#">
 							
-							<?php form_var($form); ?>
+							<?php form_var(); ?>
 							
 						  </form>
 						</div>

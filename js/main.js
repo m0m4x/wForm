@@ -88,7 +88,6 @@
 		}
 		
 		//Alert
-		
 		function view_alert(type,message,delay){
 			if(typeof delay === 'undefined') delay = 2000;
 			var n = noty({
@@ -116,9 +115,7 @@
 			$('.btn-crea').click(reqDoc);
 			
 			//notifica cambiamento
-			$("form :input").change(function() {
-			  ui_update_updtstatus(false);
-			});
+			$("form :input").change(checkformChange);
 			
 			//dropdown testo in input
 			$('.dropdown-menu li a').click(function(e) {
@@ -127,6 +124,116 @@
 			});
 			
 		}); 
+		
+	/* Modifiche al form */
+	
+	function checkformChange() {
+		
+		//Check se abilita o nascondi variabile
+		ui_show_var($(this));
+		
+		//Aggiurna status documento
+		ui_update_updtstatus(false);
+	}
+	
+	function ui_show_var(dom){
+		
+		//prendi dati
+		var type = dom.attr('type');
+			//Check se è input snoppa
+			if (type == "input") return;
+			//Check se è presente in *
+				//non necessario?
+		var name = dom.attr('name');
+		var id = dom.attr('id');
+		var val = get_dom_val(dom);
+		//view_alert("info",val);
+		
+		//parsa relazioni
+		if( name in form_validity_rel ) {
+			//disabilita input per valori diversi
+			var todisable = [];
+			for (var choiche_val in form_validity_rel[name]) {
+				if(choiche_val!=val){
+					//nascondi ogni id
+					for (i = 0; i < form_validity_rel[name][choiche_val].length; ++i) {
+						todisable.push(form_validity_rel[name][choiche_val][i]);
+						//view_alert("info","da disabilitare "+form_validity_rel[name][choiche_val][i]);
+					}
+				}
+			}
+			//check che non siano necessari da altre scelte
+			for (var choice_id in form_validity_rel) {
+				if(choice_id!="*"){
+					var c_dom = get_dom_byid(choice_id);
+					if(c_dom.length){
+						var c_val = get_dom_val(c_dom);
+						console.log(">"+choice_id+">"+c_val);
+						if(c_val in form_validity_rel[choice_id]) {
+							//per ogni id necessario 
+							for (i = 0; i < form_validity_rel[choice_id][c_val].length; ++i) {
+								//toglilo da todisable
+								var todisable_index = todisable.indexOf(form_validity_rel[choice_id][c_val][i]);
+								if(todisable_index!=-1){
+									todisable.splice(todisable_index, 1);
+								}
+							}
+						}
+					}
+				}
+			}
+			//nascondi
+			for (i = 0; i < todisable.length; ++i) {
+				//view_alert("info","disabilitato "+todisable[i]);
+				var dom = get_dom_byid(todisable[i]);
+					if(dom.length){ dom.closest('div.form-group').hide(); }
+			}
+			
+			//abilita input per valore uguale
+			if(val in form_validity_rel[name]) {
+				var i;
+				for (i = 0; i < form_validity_rel[name][val].length; ++i) {
+					//view_alert("info","abilitato "+form_validity_rel[name][val][i]);
+					var dom = get_dom_byid(form_validity_rel[name][val][i]);
+						if(dom.length){ dom.closest('div.form-group').show(); }
+				}
+			}
+		}
+		
+	}
+	
+	function get_dom_byid(id){
+		var dom;
+		//cambia dal tipo
+		if ( $( '#'+id ).length ) {
+			//è checkbox
+			dom = $('#'+id);
+		} else {
+			//è radio
+			dom = $('input[name='+id+']:checked');
+		}
+		if(!(dom.length)){
+			console.log(id+"non trovato!");
+			return [];
+		}
+			console.log(id+"trovato "+dom.length);
+		return dom;
+	}
+	function get_dom_val(dom){
+		var val = "";
+		//console.log(dom.attr('id'));
+		switch(dom.attr('type')) {
+			case 'checkbox':
+				val = 0;
+				if($('#'+dom.attr('id')+':checked').prop('checked')) val = 1;
+				break;
+			case 'radio':
+			default:
+				val = dom.val();
+		}
+		//console.log(val);
+		return val;
+	}
 	
 	/* Carica */
 	
@@ -168,16 +275,21 @@
 		for (var i in form_data) {
 			var obj = form_data[i];
 			//alert(obj['name']);
-			
 			//alert($(':input[name="'+obj['name']+'"]').attr('type'));
+			var dom ;
 			switch($('input[name="'+obj['name']+'"]').attr('type')) {
 				case 'radio':
 				case 'checkbox':
-					$('input[name="'+obj['name']+'"][value='+obj['value']+']').prop('checked', true);
+					dom = $('input[name="'+obj['name']+'"][value='+obj['value']+']');
+					dom.prop('checked', true);
 					break;
 				default:
-					$('input[name="'+obj['name']+'"]').val(obj['value']);
-			} 
+					dom = $('input[name="'+obj['name']+'"]');
+					dom.val(obj['value']);
+			}
+			
+			//Relazioni di validità
+			ui_show_var(dom);
 			
 		}
 		
