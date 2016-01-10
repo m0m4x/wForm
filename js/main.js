@@ -142,7 +142,7 @@
 	
 	function ui_show_var(dom){
 
-		console.log('check richiesto da dom '+dom.attr('id'));
+		//console.log('check richiesto da dom '+dom.attr('id'));
 		
 		//prendi dati
 		var type = dom.attr('type');
@@ -160,10 +160,11 @@
 		var todisable = [];
 		var toenable = [];
 		if( name in field_relations ) {
-			console.log("Analizzo "+name);
+			//console.log("Analizzo "+name);
 			//per ogni campo relazionato
 			for (var related_key in field_relations[name]) {
-				console.log(" Campo relazionato: "+field_relations[name][related_key]);
+				//debug
+				//console.log(" Campo relazionato: "+field_relations[name][related_key]);
 				var related = field_relations[name][related_key];
 				var to_hide = true;
 				// related è l'id del campo relazionato a quello modificato
@@ -174,14 +175,21 @@
 					if(!c_dom.length){ /*valore del dom non trovato*/ }
 					var c_dom_val = get_dom_val(c_dom);
 					//debug
-					console.log("                                      condizione:"+condition);
-					console.log("             valore attuale del campo condizione:"+c_dom_val);
+					//console.log("                                      condizione:"+condition);
+					//console.log("             valore attuale del campo condizione:"+c_dom_val);
 					//per ogni valore condizione
 					for(var value_key in field_validity[related][condition]){
 						var value = field_validity[related][condition][value_key];
-						console.log("                         valore della condizione:"+value);
-						//attenzione a valori che iniziano con !
-						if(c_dom_val==value){
+						//debug
+						//console.log("                         valore della condizione:"+value);
+						//Check se inizia con !
+						var c_bool = true;
+						if(value.substring(0, 1)=="!"){
+							c_bool = false;
+							value = value.substring(1);
+						}
+						//Valuta
+						if((c_dom_val==value) === c_bool){
 							to_hide = false;
 							break; //basta che 1 sia vera
 						}
@@ -190,135 +198,30 @@
 				//aggiungi a hide o show
 				if(to_hide){
 					todisable.push(related);
-					console.log('da disabilitare '+related);
+					//console.log('da disabilitare '+related);
 				} else {
 					toenable.push(related);
-					console.log('da abilitare '+related);
+					//console.log('da abilitare '+related);
 				}
 			}
 		}
-		return;
-		
-		
-		//parsa relazioni
-		if( name in form_validity_rel ) {
-			//parsa relazioni
-			var todisable = [];
-			var toenable = [];
-			//per ogni valore confronta con valore attuale e decidi se abilitare e disabilitare
-			for (var choiche_val in form_validity_rel[name]) {
-				console.log(">>"+choiche_val+" "+ dom_val + " ");
-				var c_bool = true;
-				var c_val = choiche_val;
-				if(choiche_val.substring(0, 1)=="!"){
-					c_bool = false;
-					c_val = choiche_val.substring(1);
+		//Nascondi
+		var i;
+		for (i = 0; i < todisable.length; ++i) {
+			//view_alert("info","disabilitato "+todisable[i]);
+			var dom = get_dom_byid(todisable[i]);
+				if(dom.length){ dom.closest('div.form-group').hide(); } else { 
+					//console.log('disabilita dom '+todisable[i]+' non trovato'); 
 				}
-				if((c_val==dom_val) === c_bool){
-					//attuale uguale a questa
-					//abilita
-					for (i = 0; i < form_validity_rel[name][choiche_val].length; i++) {
-						//console.log(' +' + form_validity_rel[name][choiche_val][i] );
-						//if(toenable.indexOf(form_validity_rel[name][choiche_val][i])==-1)
-							toenable.push(form_validity_rel[name][choiche_val][i]);
-							console.log('da abilitare '+form_validity_rel[name][choiche_val][i]);
-					}
-				} else {
-					//attuale diverso da questa
-					//disabilita nascondi ogni id
-					for (i = 0; i < form_validity_rel[name][choiche_val].length; i++) {
-						//if(toenable.indexOf(form_validity_rel[name][choiche_val][i])==-1){
-						//	if(todisable.indexOf(form_validity_rel[name][choiche_val][i])==-1){
-								todisable.push(form_validity_rel[name][choiche_val][i]);
-								console.log('da disabilitare '+form_validity_rel[name][choiche_val][i]);
-						//	}
-						//}
-					}
+		}
+		//Abilita
+		var i;
+		for (i = 0; i < toenable.length; ++i) {
+			//view_alert("info","disabilitato "+todisable[i]);
+			var dom = get_dom_byid(toenable[i]);
+				if(dom.length){ dom.closest('div.form-group').show(); }  else { 
+					//console.log('abilita dom '+toenable[i]+' non trovato');
 				}
-			}
-			return;
-			//Tra quelli da disabilitare controlla che non siano necessari da altre scelte
-			//var i;
-			//for (i = 0; i < todisable.length; ++i) {
-			//	var id_disable = todisable[i];
-			//	console.log(" >"+id_disable);
-				for (var input_id in form_validity_rel) {
-					//console.log(" >"+input_id);
-					if(input_id!="*"){
-						for (var input_val in form_validity_rel[input_id]) {
-							//console.log(" "+input_val);
-							//per ogni valore attivato da questa variabile e valore
-							for (var input_rel in form_validity_rel[input_id][input_val]) {
-								//è un oggetto key => id
-								var todisable_index = todisable.indexOf(form_validity_rel[input_id][input_val][input_rel].toString());
-								//console.log("  "+form_validity_rel[input_id][input_val][input_rel] + " "+ test);
-								if(todisable_index != -1){
-									console.log("  "+todisable[todisable_index]+" è necessario al campo "+input_id+" se il suo valore è"+input_val);
-									var c_dom = get_dom_byid(input_id);
-									if(c_dom.length){
-										var c_val = get_dom_val(c_dom);
-										if(c_val==input_val){
-											todisable.splice(todisable_index, 1);
-										}
-									}
-								}
-							}
-						}
-					}
-				} 
-			//}
-			/*
-			for (var choice_id in form_validity_rel) {
-				if(choice_id!="*"){
-					var c_dom = get_dom_byid(choice_id);
-					if(c_dom.length){
-						var c_val = get_dom_val(c_dom);
-						//console.log(">"+choice_id+">"+c_val);
-						if(c_val in form_validity_rel[choice_id]) {
-							//per ogni id necessario 
-							for (i = 0; i < form_validity_rel[choice_id][c_val].length; ++i) {
-								console.log("necessario "+form_validity_rel[choice_id][c_val][i]+" da "+choice_id);
-								//toglilo da to disable
-								var todisable_index = todisable.indexOf(form_validity_rel[choice_id][c_val][i]);
-								if(todisable_index!=-1){
-									todisable.splice(todisable_index, 1);
-								} else {
-									console.log("non trovato! "+form_validity_rel[choice_id][c_val][i] );
-								}
-							}
-						}
-					}
-				}
-			}
-			*/
-			//Nascondi
-			
-			var i;
-			for (i = 0; i < todisable.length; ++i) {
-				//view_alert("info","disabilitato "+todisable[i]);
-				var dom = get_dom_byid(todisable[i]);
-					if(dom.length){ dom.closest('div.form-group').hide(); } else { 
-						//console.log('disabilita dom '+todisable[i]+' non trovato'); 
-					}
-			}
-			//Abilita
-			var i;
-			for (i = 0; i < toenable.length; ++i) {
-				//view_alert("info","disabilitato "+todisable[i]);
-				var dom = get_dom_byid(toenable[i]);
-					if(dom.length){ dom.closest('div.form-group').show(); }  else { 
-						//console.log('abilita dom '+toenable[i]+' non trovato');
-					}
-			}
-			//abilita input per valore uguale
-			/*if(dom_val in form_validity_rel[name]) {
-				var i;
-				for (i = 0; i < form_validity_rel[name][dom_val].length; ++i) {
-					//view_alert("info","abilitato "+form_validity_rel[name][dom_val][i]);
-					var dom = get_dom_byid(form_validity_rel[name][dom_val][i]);
-						if(dom.length){ dom.closest('div.form-group').show(); }
-				}
-			}*/
 		}
 		
 	}

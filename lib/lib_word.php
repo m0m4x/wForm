@@ -810,8 +810,14 @@ function form_validity($form){
 					}else{
 						$s = explode("=",$condition);
 						$campo = $s[0];
-						$valore = $s[1];
-						$val[$id][$campo][]=$valore;
+						if(!(strpos($condition,"|")===false)){
+							$valore = explode("|",$s[1]);
+							foreach ($valore as $v)
+								$val[$id][$campo][]=$v;
+						}else {
+							$valore = $s[1]; //explode("|",$s[1]);
+							$val[$id][$campo][]=$valore;
+						}
 						$val[$id][$campo] = array_unique($val[$id][$campo]);
 					}
 				}						
