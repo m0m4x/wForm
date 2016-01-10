@@ -12,6 +12,8 @@ $id = isset($_GET['id']) ? mysqli_real_escape_string($dbhandle,$_GET['id']) : nu
 	if(is_null($id)){
 		die();
 	}
+	$debug = isset($_GET['debug']) ? mysqli_real_escape_string($dbhandle,$_GET['debug']) : null;
+		$debug = ($debug == '1') ? (bool)$debug : null;
 	
 //CARICA MINUTA - DATI da ID
 	$sql = "SELECT * FROM `wform`.`form` WHERE id_form = '".$id."' ";
@@ -50,8 +52,9 @@ $id = isset($_GET['id']) ? mysqli_real_escape_string($dbhandle,$_GET['id']) : nu
 	$p = form_load_text($doc_type);
 	$form = form_load($doc_type,$p);
 	//Relazioni di validità dei campi
-	$form_validityr = form_validity($form);
-	//var_dump($form_validityr);
+	$field_relations = form_relations($form);
+	$field_validity = form_validity($form); 
+	$field_validity_inv = form_validityrel($form); 
 	
 	//registra versione se non esiste (array to json in db)
 	//TODO
@@ -59,14 +62,23 @@ $id = isset($_GET['id']) ? mysqli_real_escape_string($dbhandle,$_GET['id']) : nu
 
 //DATI PER UI
 	if(!is_null($id)){
-		$doc_subject_var = doc_type_subject_var($data);
+		$doc_subject_var = form_type_subject_var($data);
 		//var_dump($doc_subject);
 	} else {
 		$doc_subject_var = "";
 	}
+
+
+//DATI PER DEBUG
+	if($debug){
+		echo "<h1>form</h1>";
+		echo var_dump($form)."<br>";
+		echo "<h1>form relations</h1>";
+		echo var_dump($field_relations)."<br>";
+		echo "<h1>form validity </h1>";
+		echo var_dump($field_validity)."<br>";
+	}
 	
-	
-		
 	
 ?>
 
@@ -123,7 +135,8 @@ $id = isset($_GET['id']) ? mysqli_real_escape_string($dbhandle,$_GET['id']) : nu
 	
 	var form_subject_var = "<?php echo $doc_subject_var; ?>";
 	
-	var form_validity_rel = <?php echo json_encode($form_validityr); ?>;
+	var field_relations = <?php echo json_encode($field_relations); ?>;
+	var field_validity = <?php echo json_encode($field_validity); ?>;
 </script>
 
 <body>
