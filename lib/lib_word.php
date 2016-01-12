@@ -650,11 +650,47 @@ function form_se($form){
 	
 }
 	
-function form_var(){
-	global $form;
+function form_var($form){
+	
+	/*
+	$segmts = Array();
+	foreach ($form as $field) {
+		if($field["tipo"]=="var") {
+			$pcs = explode("_", $field["id"]);
+			if(count($pcs)>2){
+				$segment = $pcs[1];
+				$segmts[$segment] = @$segmts[$segment] + 1;
+			}
+		}
+	}
+	*/
+	//var_dump($segmts);
+	
 	//Only 'var'
 	foreach ($form as $field) {
 		if($field["tipo"]=="var") {
+			
+			//Sezione
+			/*
+			$pcs = explode("_", $field["id"]);
+			if(count($pcs)>2){
+				$segment = $pcs[1];
+				if(array_key_exists($segment,$segmts)){
+					if($segmts[$segment]>2){
+						?>
+						<!-- variable -->
+						<div class="form-group form-group-sm" style="" >
+							<div class="col-md-9 col-md-offset-3 text-left">
+								<small style="text-decoration: underline;text-transform: uppercase;"><?php echo $segment; ?></small>
+							</div>
+						</div>
+						<?php
+					}
+					unset ($segmts[$segment]);
+				}
+			}
+			*/
+			
 			print_var($field);
 		}
 	}
@@ -662,18 +698,17 @@ function form_var(){
 }
 	function print_var($field,$add=false){
 		global $form;
-		global $form_validityr;
-	
+		
 		//E' un aggiunta ad un campo precedente?
 		$id = $field['id'];
 		if($add){
 			 $info_label="...in lettere";
-			 $pos1=5;
-			 $pos2=5;
+			 $pos1=7;
+			 $pos2=4;
 		}else{
 			 $info_label = ($field['label']!="" ? $field['label'] : $field['id']); 
-			 $pos1=4;
-			 $pos2=6;
+			 $pos1=6;
+			 $pos2=5;
 		}
 		$info_label = str_replace("_", " ", $info_label);
 		
@@ -704,20 +739,18 @@ function form_var(){
 		
 		//Mostra sempre o nascondi
 		$hide = form_var_to_hide($id);
-			
-		//var_dump($form_validityr['*']);
 		
 		//Seleziona tipologia
 		if($forced_type=="list"){
 			//Dropdown
-			
+			// placeholder="< ?php echo $id; ? >"
 			?>
-				<!-- input con menu -->
-				<div class="form-group form-group-sm" style="<?php if($hide) echo "display:none;";?>">
+				<!-- input con menu -->	
+				<div class="form-group form-group-sm" style="<?php if($hide) echo "display:none; "; if($f_add) echo "margin-bottom:5px !important;";?>">
 					<label for="<?php echo $id; ?>" class="control-label col-md-<?php echo $pos1; ?>"><?php echo $info_label; ?></label>
 					<div class="col-md-<?php echo $pos2; ?>">
 						<div class="input-group input-group-sm">
-						  <input type="text" class="form-control" name="<?php echo $id; ?>" id="<?php echo $id; ?>" placeholder="<?php echo $id; ?>" value="">
+						  <input type="text" title="<?php echo $id; ?>" class="form-control" name="<?php echo $id; ?>" id="<?php echo $id; ?>" value="">
 						  <div class="input-group-btn">
 							<button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"> <span class="caret"></span></button>
 							<ul class="dropdown-menu dropdown-menu-right">
@@ -736,18 +769,16 @@ function form_var(){
 			
 		} else {
 			//Input normale
-			
 			?> 
 				<!-- variable -->
 				<div class="form-group form-group-sm" style="<?php if($hide) echo "display:none;"; if($f_add) echo "margin-bottom:5px !important;";?>" >
 					<label for="<?php echo $id; ?>" class="control-label col-md-<?php echo $pos1; ?>"><?php echo $info_label; ?></label>
 					<div class="col-md-<?php echo $pos2; ?>">
-						<input type="text" class="form-control" name="<?php echo $id; ?>" id="<?php echo $id; ?>" placeholder="<?php echo $id; ?>" value="<?php echo $forced_val;?>">
+						<input type="text" title="<?php echo $id; ?>" class="form-control" name="<?php echo $id; ?>" id="<?php echo $id; ?>"  value="<?php echo $forced_val;?>">
 						<?php if($field['info']!=""){ ?><span class="help-block"> <?php echo $field['info']; ?> </span><?php } ?>
 					</div>
 				</div>
 			<?php
-			
 		}
 		
 		// suffisso _lettere
@@ -787,7 +818,7 @@ function form_relations($form){
 		}
 		
 	}
-	var_dump($val);
+	//var_dump($val);
 
 	return $val;
 }
@@ -827,7 +858,7 @@ function form_validity($form){
 		
 	}
 	unset($val['*']);
-	var_dump($val);
+	//var_dump($val);
 	
 	return $val;
 }
@@ -893,28 +924,28 @@ function form_validityrel($form){
 }
 
 function form_var_to_hide($id){
-	global $field_validity_inv;
+	global $field_relations;
+	global $field_validity;
 	global $form;
+	global $form_data;
 	
 	//determina se mostrare per defualt una variabile oppure nasconderla
-	
+
 	// variabili presenti nel corpo del testo (non dentro a dei se)
-	if(in_array($id,$field_validity_inv['*'])){
+	if( in_array($id, $field_relations['*']) ) {
 		return false;
 	}
 	
-	//variabili in un se (checkbox) a valore 0 (che è il default per un checkbox)
-	foreach($field_validity_inv as $choice_id=>$choice_values){
-		//se è un checkbox
-		if(array_key_exists($choice_id,$form))
-		if($form[$choice_id]['tipo'] == "se"){
-			if(array_key_exists("0",$choice_values)){
-				foreach($choice_values['0'] as $var_id){
-					if($id==$var_id){
-						return false;
-					}
-				}	
-			}		
+	//controllo campi relazionati e loro valori
+	if( in_array($id, $field_validity) ) {
+		foreach($field_validity[$id] as $field_related ){
+			$current_val = get_data_val_id($form_data,$field_related);
+			//verifica valori
+			foreach($field_validity[$id][$field_related] as $value ){
+				if($current_val==$condition_val){
+					return false;
+				}
+			}
 		}
 	}
 	

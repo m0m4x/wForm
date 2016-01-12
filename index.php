@@ -25,6 +25,7 @@ $id = isset($_GET['id']) ? mysqli_real_escape_string($dbhandle,$_GET['id']) : nu
 	$row = mysqli_fetch_array( $stmt, MYSQLI_ASSOC);
 	
 	//Check se è un modello
+	$form_data = null;
 	if(!isset($row)) {
 		
 		//non esiste id - carica da modello file
@@ -35,15 +36,15 @@ $id = isset($_GET['id']) ? mysqli_real_escape_string($dbhandle,$_GET['id']) : nu
 			die();	
 		}
 		
-		$data = null;
+		$form_data = null;
 		$doc_type = $id;
 		$id = null;
 		
 	} else {
 		
 		//decode data
-		$data = json_decode($row['data']);
-		$doc_type = $data[0]->mod;
+		$form_data = json_decode($row['data']);
+		$doc_type = $form_data[0]->mod;
 		
 	}
 	
@@ -54,7 +55,7 @@ $id = isset($_GET['id']) ? mysqli_real_escape_string($dbhandle,$_GET['id']) : nu
 	//Relazioni di validità dei campi
 	$field_relations = form_relations($form);
 	$field_validity = form_validity($form); 
-	$field_validity_inv = form_validityrel($form); 
+	//$field_validity_inv = form_validityrel($form); 
 	
 	//registra versione se non esiste (array to json in db)
 	//TODO
@@ -62,7 +63,7 @@ $id = isset($_GET['id']) ? mysqli_real_escape_string($dbhandle,$_GET['id']) : nu
 
 //DATI PER UI
 	if(!is_null($id)){
-		$doc_subject_var = form_type_subject_var($data);
+		$doc_subject_var = form_type_subject_var($form_data);
 		//var_dump($doc_subject);
 	} else {
 		$doc_subject_var = "";
@@ -194,7 +195,7 @@ $id = isset($_GET['id']) ? mysqli_real_escape_string($dbhandle,$_GET['id']) : nu
 				
 				<div id="alert_form_notsaved" style="display:none;" class="has-warning text-info"> <span class="glyphicon glyphicon-alert" aria-hidden="true"></span> Il Documento non è ancora stato salvato! </div>
 				<div id="alert_form_modified" style="display:none;" class="has-warning text-danger"> <span class="glyphicon glyphicon-alert" aria-hidden="true"></span> Sono presenti modifiche non salvate! </div>
-				<div id="alert_form_saved" style="display:none;" class="has-warning text-success"> <span class="glyphicon glyphicon-ok-sign" aria-hidden="true"></span> Non sono presenti modifiche non salvate! </div>
+				<div id="alert_form_saved" style="display:none;" class="has-warning text-success"> <span class="glyphicon glyphicon-ok-sign" aria-hidden="true"></span> Documento salvato! </div>
 			</div>
 			</small>
 		</div>
@@ -247,7 +248,7 @@ $id = isset($_GET['id']) ? mysqli_real_escape_string($dbhandle,$_GET['id']) : nu
 						<div class="panel-body">
 						  <form id="mainform" class="form-horizontal row-border" action="#">
 							
-							<?php form_var(); ?>
+							<?php form_var($form); ?>
 							
 						  </form>
 						</div>
