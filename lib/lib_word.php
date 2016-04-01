@@ -752,20 +752,34 @@ function form_var($form){
 			if ( endsWith($id, "_lettere") && array_key_exists(substr($id,0,strlen($suffisso)*-1),$form)) return;
 			if (array_key_exists($id."_lettere",$form) ) { $f_add=true; }
 		}
+		
+		//suffisso _anno _mese _giorno
+		$forced_type = "";
+		/*$forced_type = "";
+		if(endsWith($id, "_anno") || endsWith($id, "_mese") || endsWith($id, "_giorno")){
+			$base = str_replace(Array("_anno","_mese","_giorno"),"",$id);
+			if(	array_key_exists($base."_anno",$form) &&
+				array_key_exists($base."_mese",$form) &&
+				array_key_exists($base."_giorno",$form)){
+				$forced_type = "date";
+				if($id!=$base."_anno") return;
+			}
+		}*/
 			
 		//Gestisci Valori
 		$forced_val = "";
-		$forced_type = "";
-		if(array_key_exists("val",$field)){
-			if($field['val']!=""){
-				$forced_val = explode(",",$field['val']);
-				$forced_val = array_filter($forced_val);
-				if(count($forced_val)>1){
-					//valori obbligatori
-					$forced_type = "list";
-				} else {
-					//valore predefinito
-					$forced_type = "value";
+		if($forced_type==""){
+			if(array_key_exists("val",$field)){
+				if($field['val']!=""){
+					$forced_val = explode(",",$field['val']);
+					$forced_val = array_filter($forced_val);
+					if(count($forced_val)>1){
+						//valori obbligatori
+						$forced_type = "list";
+					} else {
+						//valore predefinito
+						$forced_type = "value";
+					}
 				}
 			}
 		}
@@ -798,6 +812,26 @@ function form_var($form){
 					</div>
 				</div>
 				
+			<?php
+			
+		} else if($forced_type=="date") {
+			
+			?>
+				<!-- variable -->
+				<div class="form-group form-group-sm" style="<?php if($hide) echo "display:none;"; if($f_add) echo "margin-bottom:5px !important;";?>" >
+					<label for="<?php echo $id; ?>" class="control-label col-md-<?php echo $pos1; ?>"><?php echo str_replace("l'anno","la data",$info_label); ?></label>
+					<div class="col-md-1">
+						<input type="text" title="<?php echo $id; ?>_giorno" class="form-control" name="<?php echo $id; ?>_giorno" id="<?php echo $id; ?>_giorno" >
+					</div>
+					<div class="col-md-1">
+						<input type="text" title="<?php echo $id; ?>_mese" class="form-control" name="<?php echo $id; ?>_mese" id="<?php echo $id; ?>_mese" >
+					</div>
+					<div class="col-md-1">
+						<input type="text" title="<?php echo $id; ?>_anno" class="form-control" name="<?php echo $id; ?>_anno" id="<?php echo $id; ?>_anno" >
+						<?php if($field['info']!=""){ ?><span class="help-block"> <?php echo $field['info']; ?> </span><?php } ?>
+					</div>
+				</div>
+			
 			<?php
 			
 		} else {

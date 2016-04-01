@@ -160,11 +160,11 @@
 		var todisable = [];
 		var toenable = [];
 		if( name in field_relations ) {
-			console.log("Analizzo "+name);
+			//console.log("Analizzo "+name);
 			//per ogni campo relazionato
 			for (var related_key in field_relations[name]) {
 				//debug
-				console.log(" Campo relazionato: "+field_relations[name][related_key]);
+				//console.log(" Campo relazionato: "+field_relations[name][related_key]);
 				var related = field_relations[name][related_key];
 				var conditions_res = new Array(); 
 				// related è l'id del campo relazionato a quello modificato
@@ -176,14 +176,14 @@
 					if(!c_dom.length){ return; /*valore del dom non trovato*/ }
 					var c_dom_val = get_dom_val(c_dom);
 					//debug
-					console.log("                                      condizione:"+condition);
-					console.log("             valore attuale del campo condizione:"+c_dom_val);
+					//console.log("                                      condizione:"+condition);
+					//console.log("             valore attuale del campo condizione:"+c_dom_val);
 					//per ogni valore condizione
 					var res = false;
 					for(var value_key in field_validity[related][condition]){
 						var value = field_validity[related][condition][value_key];
 						//debug
-						console.log("                         valore della condizione:"+value);
+						//console.log("                         valore della condizione:"+value);
 						//Check se inizia con !
 						var c_bool = true;
 						if(value.substring(0, 1)=="!"){
@@ -194,23 +194,23 @@
 						if((c_dom_val==value) === c_bool){
 							conditions_res.push(true);
 							res = true;
-							console.log("                         > vero");
+							//console.log("                         > vero");
 							break; //basta che 1 sia vera
 						}
 					}
 					//Nessuna vera, metti falso
 					if(!res){
 						conditions_res.push(false);
-						console.log("                         > falso");	
+						//console.log("                         > falso");	
 					}
 				}
 				//valuta
 				var to_hide = false;
 				for(var cond_res in conditions_res){
-					console.log(conditions_res[cond_res]);
+					//console.log(conditions_res[cond_res]);
 					if( !conditions_res[cond_res] ) {
 						to_hide = true;
-						console.log("nascondo");
+						//console.log("nascondo");
 						break;
 					}
 				}
@@ -256,7 +256,7 @@
 			dom = $('input[name='+id+']:checked');
 		}
 		if(!(dom.length)){
-			console.log(id+"non trovato!");
+			//console.log(id+"non trovato!");
 			return false;
 		}
 		//console.log(id+"trovato "+dom.length);
@@ -416,7 +416,8 @@
 				
 				//Redirect
 				ui_alert_disable = true;
-				window.location.replace("/"+basepath+"/"+id);
+				//window.location.replace("/"+basepath+"/"+id);
+				document.location.assign("/"+basepath+"/"+id);
 			})
 			// show Modal
 			$('#commModal').modal('show');
@@ -453,7 +454,8 @@
 			if(getID()=='') return;
 			//Redirect
 			ui_alert_disable = true;
-			window.location.href = "lib/req_word.php?action=gen&format=docx&id="+getID();
+			//window.location.href = "lib/req_word.php?action=gen&format=docx&id="+getID();
+			document.location.replace("lib/req_word.php?action=gen&format=docx&id="+getID());
 		}
 		function genPdf(){
 			return; //non disponibile
