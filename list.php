@@ -22,7 +22,7 @@ while (false !== ($filename = readdir($dh))) {
 		$doc_modified = date("d/m/Y H:i:s",strtotime($doc_info['dcterms:modified']));
 		$doc_creator = date("d/m/Y H:i:s",strtotime($doc_info['dc:creator']));
 		$doc_lastModifiedBy = date("d/m/Y H:i:s",strtotime($doc_info['cp:lastModifiedBy']));
-		$docs[] = [	"doc_name" => $doc_name, 
+		$docs[] = Array( "doc_name" => $doc_name, 
 					"doc_title" => $doc_title,
 					"doc_keywords" => $doc_keywords,
 					"doc_description" => $doc_description,
@@ -30,7 +30,8 @@ while (false !== ($filename = readdir($dh))) {
 					"doc_modified" => $doc_modified,
 					"doc_creator" => $doc_creator,
 					"doc_lastModifiedBy" => $doc_lastModifiedBy,
-					];
+					);
+
 	}
 }
 sort($docs);

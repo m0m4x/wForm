@@ -12,6 +12,8 @@ $id = isset($_GET['id']) ? mysqli_real_escape_string($dbhandle,$_GET['id']) : nu
 	if(is_null($id)){
 		die();
 	}
+	$debug = isset($_GET['debug']) ? mysqli_real_escape_string($dbhandle,$_GET['debug']) : null;
+		$debug = ($debug == '1') ? (bool)$debug : null;
 	
 //CARICA MINUTA - DATI da ID
 	$sql = "SELECT * FROM `wform`.`form` WHERE id_form = '".$id."' ";
@@ -23,6 +25,7 @@ $id = isset($_GET['id']) ? mysqli_real_escape_string($dbhandle,$_GET['id']) : nu
 	$row = mysqli_fetch_array( $stmt, MYSQLI_ASSOC);
 	
 	//Check se è un modello
+	$form_data = null;
 	if(!isset($row)) {
 		
 		//non esiste id - carica da modello file
@@ -33,15 +36,15 @@ $id = isset($_GET['id']) ? mysqli_real_escape_string($dbhandle,$_GET['id']) : nu
 			die();	
 		}
 		
-		$data = null;
+		$form_data = null;
 		$doc_type = $id;
 		$id = null;
 		
 	} else {
 		
 		//decode data
-		$data = json_decode($row['data']);
-		$doc_type = $data[0]->mod;
+		$form_data = json_decode($row['data']);
+		$doc_type = $form_data[0]->mod;
 		
 	}
 	
@@ -49,6 +52,10 @@ $id = isset($_GET['id']) ? mysqli_real_escape_string($dbhandle,$_GET['id']) : nu
 	require_once("lib/lib_word.php");
 	$p = form_load_text($doc_type);
 	$form = form_load($doc_type,$p);
+	//Relazioni di validità dei campi
+	$field_relations = form_relations($form);
+	$field_validity = form_validity($form); 
+	//$field_validity_inv = form_validityrel($form); 
 	
 	//registra versione se non esiste (array to json in db)
 	//TODO
@@ -56,12 +63,23 @@ $id = isset($_GET['id']) ? mysqli_real_escape_string($dbhandle,$_GET['id']) : nu
 
 //DATI PER UI
 	if(!is_null($id)){
-		$doc_subject_var = doc_type_subject_var($data);
+		$doc_subject_var = form_type_subject_var($form_data);
 		//var_dump($doc_subject);
 	} else {
 		$doc_subject_var = "";
 	}
-		
+
+
+//DATI PER DEBUG
+	if($debug){
+		echo "<h1>form</h1>";
+		echo var_dump($form)."<br>";
+		echo "<h1>form relations</h1>";
+		echo var_dump($field_relations)."<br>";
+		echo "<h1>form validity </h1>";
+		echo var_dump($field_validity)."<br>";
+	}
+	
 	
 ?>
 
@@ -117,6 +135,9 @@ $id = isset($_GET['id']) ? mysqli_real_escape_string($dbhandle,$_GET['id']) : nu
 	var currentMOD = "<?php echo $doc_type; ?>";
 	
 	var form_subject_var = "<?php echo $doc_subject_var; ?>";
+	
+	var field_relations = <?php echo json_encode($field_relations); ?>;
+	var field_validity = <?php echo json_encode($field_validity); ?>;
 </script>
 
 <body>
@@ -174,7 +195,7 @@ $id = isset($_GET['id']) ? mysqli_real_escape_string($dbhandle,$_GET['id']) : nu
 				
 				<div id="alert_form_notsaved" style="display:none;" class="has-warning text-info"> <span class="glyphicon glyphicon-alert" aria-hidden="true"></span> Il Documento non è ancora stato salvato! </div>
 				<div id="alert_form_modified" style="display:none;" class="has-warning text-danger"> <span class="glyphicon glyphicon-alert" aria-hidden="true"></span> Sono presenti modifiche non salvate! </div>
-				<div id="alert_form_saved" style="display:none;" class="has-warning text-success"> <span class="glyphicon glyphicon-ok-sign" aria-hidden="true"></span> Non sono presenti modifiche non salvate! </div>
+				<div id="alert_form_saved" style="display:none;" class="has-warning text-success"> <span class="glyphicon glyphicon-ok-sign" aria-hidden="true"></span> Documento salvato! </div>
 			</div>
 			</small>
 		</div>
@@ -193,7 +214,7 @@ $id = isset($_GET['id']) ? mysqli_real_escape_string($dbhandle,$_GET['id']) : nu
 					  <div class="panel panel-default">
 						<div class="panel-heading clearfix">
 						  <i class="icon-calendar"></i>
-						  <h3 class="panel-title">configurazione</h3>
+						  <h3 class="panel-title">Configurazione di base</h3>
 						</div>
 					   
 						<div class="panel-body">
@@ -221,7 +242,7 @@ $id = isset($_GET['id']) ? mysqli_real_escape_string($dbhandle,$_GET['id']) : nu
 					  <div class="panel panel-default">
 						<div class="panel-heading clearfix">
 						  <i class="icon-calendar"></i>
-						  <h3 class="panel-title">valori</h3>
+						  <h3 class="panel-title">Tabella dei dati</h3>
 						</div>
 					   
 						<div class="panel-body">
@@ -312,7 +333,7 @@ $id = isset($_GET['id']) ? mysqli_real_escape_string($dbhandle,$_GET['id']) : nu
 							<span id="data-copy">%url%</span>
 							<span class="pull-right">
 								<button type="button" class="btn btn-copy btn-default btn-sm btn-tooltip" aria-label="Left Align" 
-									style="padding-bottom: 1px;padding-top: 1px;vertical-align: text-bottom;"
+									style="padding-bottom: 1px;padding-top: 1px;vertical-align: text-bottom;user-select: none;"
 									title="Copia indirizzo!" data-clipboard-action="copy" data-clipboard-target="#data-copy" >
 									<span class="glyphicon glyphicon-link" aria-hidden="true"></span> 
 								</button>

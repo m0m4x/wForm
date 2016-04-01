@@ -1,4 +1,9 @@
 <?php
+
+//LIBRERIE
+	//carica db
+	require_once("lib_math.php");
+
 ini_set('xdebug.var_display_max_depth', 10);
 ini_set('xdebug.var_display_max_children', 256);
 ini_set('xdebug.var_display_max_data', 1024);
@@ -38,7 +43,7 @@ function docx_load_info($doc_type){
 				
 			} else {
 				$zip->close();
-				die("error reading docx...");
+				die("error reading docx - ". $archiveFile);
 			}
 		}
 
@@ -153,56 +158,6 @@ function form_load_text($doc_type){
 	return $p;
 }
 
-/*	 OBSOLETE
-function form_load_p($doc_type){
-	
-	$archiveFile = dirname(__FILE__)."/../doc/".$doc_type.".docx";
-	
-	//check file existence
-	if(!file_exists($archiveFile)) die($archiveFile);
-	
-	//XML Load
-	$xml = new DOMDocument();
-
-		//word .docx
-		$zip = new ZipArchive;
-		if (true === $zip->open($archiveFile)) {
-			if (($index = $zip->locateName("word/document.xml")) !== false) {
-				$data = $zip->getFromIndex($index);
-				$zip->close();
-				// Load XML from a string
-				// Skip errors and warnings
-				$xml->loadXML($data, LIBXML_NOENT | LIBXML_XINCLUDE | LIBXML_NOERROR | LIBXML_NOWARNING);
-				
-				// Return data without XML formatting tags
-				//echo strip_tags($xml->saveXML());
-				
-				// Return completed xml document
-				//$xml->preserveWhiteSpace = true;
-				//$xml->formatOutput = true;
-				//$xml_string = $xml->saveXML();
-				//echo $xml_string;
-			} else {
-				$zip->close();
-				die("error reading docx...");
-			}
-		}
-
-	//XML Parsing
-	$xml_xpath = new DomXPath($xml);
-	$pNodes = $xml_xpath->query("/w:document/w:body/w:p");
-
-	$listp = Array();
-	foreach ($pNodes as $p) {
-		$listp[] .= $p->nodeValue;
-	}
-	
-	return $listp;
-}
-*/
-
-/*$form=Array();
-$stack_se=Array();*/
 function form_load($doc_type,&$p){
 	
 	//Get text
@@ -211,11 +166,13 @@ function form_load($doc_type,&$p){
 	//Reset Global Var
 	$form=Array();
 	$stack_se=Array();
+	
+	$check_addcond = Array(); // ci scrivo le condizioni aggiuntive, solo per vedere se alla fine sono state definite singolarmente.
 
 	//Parsing codes
 	$pattern = "/[\[][^\]]*[\]]/";	// [*]
-	$p = preg_replace_callback(	$pattern, 
-							function ($op) use (&$form,&$stack_se)  {
+	$p = preg_replace_callback_offset(	$pattern, 
+							function ($op) use (&$form,&$stack_se,&$check_addcond)  {
 								//Generate field $f in $form
 								// (id) 
 								// (tipo) 
@@ -228,9 +185,10 @@ function form_load($doc_type,&$p){
 								//debug
 								//var_dump($op);
 								//var_dump($stack_se);
-								
+
 								// Imposta valori default							
 								$opcode=$op[0];
+								$opcode_offset = $op[1];
 								
 								//	0.Parse Info aggiuntive e pulisci
 									// Labels
@@ -246,17 +204,24 @@ function form_load($doc_type,&$p){
 										if(array_key_exists(1,$t)) $info_label_atext = $t[1];
 									}
 									//Forced Values
-									$info_val_type = "";
 									$info_val = ""; 
-									$pattern = "/[\(][=]{1}([=])?([^\)]*)[\)]/i";	// tutte le parentesi il cui contenuto inizia con =
+									$pattern = "/[\(][=]{1}([^\)]*)[\)]/i";	// tutte le parentesi il cui contenuto inizia con =
 									$infos = array();
 									preg_match_all($pattern, $opcode, $infos, PREG_SET_ORDER);
 									//print_r($infos);
 									foreach($infos as $inf){
-										// group #1 => $val_type
-										// group #2 => $val
-										$info_val_type = $inf[1];
-										$info_val = $inf[2];
+										// group #1 => $val
+										$info_val = $inf[1];
+									}
+									//Calculated Values
+									$info_val_calc = ""; 
+									$pattern = "/[\(][#]{1}([^\)]*)[\)]/i";	// tutte le parentesi il cui contenuto inizia con #
+									$infos = array();
+									preg_match_all($pattern, $opcode, $infos, PREG_SET_ORDER);
+									//print_r($infos);
+									foreach($infos as $inf){
+										// group #1 => $val
+										$info_val_calc = $inf[1];
 									}
 									//Clean
 									$opcode = preg_replace("/[\(].*[\)]/", "", $opcode);
@@ -297,25 +262,55 @@ function form_load($doc_type,&$p){
 											//se piu parole => dropdown
 											$tipo = "se";
 										
-										//In caso di AND/OR prendi solo il primo come id
-										$pattern = '/[|&]/';
+										//Esamina oggetto della condizione - AND/OR con soggetti multipli
+										// es. se aaa|bbb allora fai questo
+										//estrai SOLO il primo
+										$idmultiple = "";
+										$pattern = '/[|]/';
 										$match = preg_split( $pattern, $id);
 										$id = $match[0];
 										
-										//Valore della condizione
-										//negazione -> inverti val
+										//Esamina se è un se condizionato da variabile
+										// in questo caso il se non deve creare una voce nel form, quindi non è rilevante nella variabile $form.
+										if(strpos($id,"=")!==false){
+											//se condizionato da variabile
+											
+											$val= substr($id,strpos($id,"=")+1);
+											$id = substr($id,0,strpos($id,"="));
+											//echo $id.">>".$val;exit;
+											//check esiste variabile della condizione?
+											if(!in_array($id, get_all_var_id($form)) ){
+												//TODO errore se con variabile non esistente
+											}
+										} else {
+											//se normale
+											
+											// CHECK - per controllo su condizioni aggiuntive
+											foreach($match as $m){
+												if(substr($m,0,1)=="!") 
+													$check_addcond[] = substr($m,1); 
+												else 
+													$check_addcond[] = $m;
+											}
+											
+											//Valore della condizione
+											//non letto in fase di generazione del documento - solo per creare Form
+											//negazione -> inverti val
 											$neg = check_val_neg($id);
 											if($neg) $id = str_replace("!","",$id);
-										$val="";
-										if($tipo == "se"){
-											if($neg) $val = "0"; else $val = "1";
-										} else {
-											if($neg) $val = "!".$opcodes[2]; else $val = $opcodes[2];
+											$val="";
+											if($tipo == "se"){
+												if($neg) $val = "0"; else $val = "1";
+											} else {
+												if($neg) $val = "!".$opcodes[2]; else $val = $opcodes[2];
+											}
+										
 										}
 										
 										//Crea stack SE
 										$s = array(	"id" 	=> $id,
 													"tipo"	=> $tipo,
+													"offset"	=> $opcode_offset,
 													"label"	=> $info_label, "info"	=> $info_label_atext,
 													"sect" 	=> array( array( 	"id" => $id , 
 																				"val" => $val , 
@@ -408,7 +403,7 @@ function form_load($doc_type,&$p){
 											if($info_label!="") { $form[$id]["label"] = $info_label; }
 											$form[$id] = $f;
 										} else {
-											$f = search_form($id, $form);
+											$f = get_var($form, $id);
 											//TODO CHECK - Se tipologia diversa errore!
 											$f["sect"][] = $s["sect"];
 											
@@ -429,24 +424,32 @@ function form_load($doc_type,&$p){
 										//ID sistema - skip
 										if(($id=="articolo")||(($id=="comma")))
 											break;
+								
+										//Get se stack for conditionated values
+										//echo $id."=>".get_last_se($stack_se)."<br>\n";
+										//$validity[] = get_last_se_validity($stack_se);
+										$validity = get_se_validity($stack_se);
 										
 										//check if "id" exist
-										if (!array_key_exists($id,$form) ) {	//is_null(search_form($opcodes[0], $form))
+										if (!array_key_exists($id,$form) ) {	//is_null(get_var($form,$opcodes[0]))
 											//not exist: create
 											$f = array(	"id" => $opcodes[0],
 														"tipo" => "var",
+														"offset"	=> $opcode_offset,
 														"label" => $info_label, 
 														"info" => $info_label_atext,
+														"valid" => $validity, 
 														"val" => $info_val,
-														"val_tipo" => $info_val_type
+														"val_calc" => $info_val_calc
 														);
 											if($info_label!="") $f["label"] = $info_label;
 											//Add to form
 											$form[$id] = $f;
 										} else {
 											//exist: add position
-											$f = search_form($opcodes[0], $form);
+											$f = get_var($form,$opcodes[0]);
 											if($info_label!="") $f["label"] = $info_label;
+											$f["valid"] = array_merge($f["valid"], $validity);
 											$form[$id] = $f; //Replace not add
 										}
 											/*
@@ -484,13 +487,57 @@ function form_load($doc_type,&$p){
 							$p,
 							PREG_OFFSET_CAPTURE );
 	
-	//var_dump($form);exit;
+	//Check
+	
+		//Se non chiusi
+		//var_dump($stack_se);
+		if(count($stack_se)>0){
+			foreach($stack_se as $se){
+				echo "<pre class='xdebug-var-dump' dir='ltr'>ERRORE nel template <b>'".$doc_type."'</b>: Sezione <font color='#cc0000'>[se ".$se['id']."]</font> incompleta!  (carattere nr:".$se['offset'].")</pre>";
+			}
+		}
+		
+		//Condition not defined
+		//var_dump($check_addcond);
+		$check_addcond = array_unique($check_addcond);
+		foreach($check_addcond as $cond){
+			if(substr($cond,0,1)=="!") $cond = substr($cond,1);
+			if (!array_key_exists($cond,$form) ) {
+				echo "<pre class='xdebug-var-dump' dir='ltr'>ERRORE nel template <b>'".$doc_type."'</b>: La condizione ausiliaria <font color='#cc0000'>'".$cond."'</font> viene utilizzata senza definizione!</pre>";
+			}
+		}
+	
+	//var_dump($form);
 	//echo str_replace("<par>","<br>",$p);
 	
 	//Riordina
 	//usort($form, "form_sort");
 	
 	return $form;
+}
+
+function get_last_se_validity($stack_se){
+	if(count($stack_se)==0){
+		return '*';
+	}else {
+		//var_dump($stack_se);
+		$last_se = end($stack_se);
+		$last_sect = end($last_se['sect']);
+		return $last_sect['id']."=".$last_sect['val'];
+	}
+}
+
+function get_se_validity($stack_se){
+	if(count($stack_se)==0){
+		return array('*');
+	}else {
+		$v = array();
+		foreach($stack_se as $se){
+			$sect = end($se['sect']);
+			$v[] = $sect['id']."=".$sect['val'];
+		}
+		return $v;
+	}
 }
 
 function form_sect($form){
@@ -507,8 +554,7 @@ function form_sect($form){
 	return $section;
 }
 
-function sect_cmp($a, $b)
-{
+function sect_cmp($a, $b){
 	//var_dump($a);exit;
     if ($a[0]['dep'] == $b[0]['dep']) {
         return 0;
@@ -516,9 +562,25 @@ function sect_cmp($a, $b)
     return ($a[0]['dep'] > $b[0]['dep']) ? -1 : 1;
 }
 
-function form_sort($a, $b)
-{
+function form_sort($a, $b){
 	return strcasecmp($a['id'],$b['id']);
+}
+
+function form_sort_adv($a, $b){
+	//return strcasecmp($a['id'],$b['id']);
+	//echo $a['id'] . $b['id'] ;
+	$a_str = explode('_',$a['id']); $a_str = $a_str[0]; //echo $a_str." ";
+	$b_str = explode('_',$b['id']); $b_str = $b_str[0]; //echo $b_str." ";
+	$a_num = preg_replace("/[a-zA-Z]+/", "", $a_str); //echo $a_num." ";
+	$b_num = preg_replace("/[a-zA-Z]+/", "", $b_str); //echo $b_num." ";
+	if($a_num==$b_num)  {
+		//echo "S ---";
+		return strcasecmp($a['id'],$b['id']);
+	} else {
+		//echo "N ---";
+		return $a_num - $b_num;
+	}
+	
 }
 
 function check_val_neg($val){
@@ -529,51 +591,6 @@ function check_val_neg($val){
 	return $neg;
 }
 
-
-//Functions 4 parsing
-function search_form($id,$form){
-	foreach($form as $f){
-		if($f["id"]==$id){
-			return $f;
-		}
-	}
-	return null;
-}
-function search_form_id($id,$form){
-	$i=0;
-	foreach($form as $f){
-		if($f["id"]==$id){
-			return $i;
-		}
-		$i++;
-	}
-	return null;
-}
-
-
-/*
-function get_text($from,$to){
-	global $listp;
-	$f_p = $from[0];
-	$f_c = $from[1];
-	$t_p = $to[0];
-	$t_c = $to[1];
-	$text = "";
-	for($i=$f_p;$i<=$t_p;$i++){
-		//foreach par
-		$start=0;
-		$stop=strlen($listp[$i]);
-		if($i==$f_p){
-			$start = $f_c;
-		}
-		if($i==$t_p){
-			$stop = $t_c;
-		}
-		$text .= substr($listp[$i], $start, $stop-$start );
-	}
-	return $text;
-}
-*/
 
 //CREATE Form
 
@@ -666,118 +683,329 @@ function form_se($form){
 	
 function form_var($form){
 	
-	//Only 'var'
+	usort($form, "form_sort_adv");
+	
+	/*
+	$segmts = Array();
 	foreach ($form as $field) {
-		//print_r($field);
-		$id = $field['id'];
-		$info_label = ($field['label']!="" ? $field['label'] : $field['id']); 
-		$info_label = str_replace("_", " ", $info_label);
-		
-				
-		//Gestisci Valori
-		$forced_val = "";
-		if(array_key_exists("val",$field)){
-			if($field['val']!=""){
-				if($field['val_tipo']=="="){
-					//valori obbligatori
-					$forced_val = explode(",",$field['val']);
-					$forced_val = array_filter($forced_val);
-					//var_dump($forced_val);
-				} else {
-					//valore predefinito
-					$forced_val = $field['val'];
-				}
+		if($field["tipo"]=="var") {
+			$pcs = explode("_", $field["id"]);
+			if(count($pcs)>2){
+				$segment = $pcs[1];
+				$segmts[$segment] = @$segmts[$segment] + 1;
 			}
 		}
+	}
+	*/
+	//var_dump($segmts);
 	
-/*	
-
-		*/
-		
-		//Switch
-		switch ($field["tipo"]) {
-				case "var":	//variable
-					//var_dump($field);
-					//Seleziona tipologia
-					if($field['val_tipo']=="="){
-						//Dropdown
-						
+	//Only 'var'
+	foreach ($form as $field) {
+		if($field["tipo"]=="var") {
+			
+			//Sezione
+			/*
+			$pcs = explode("_", $field["id"]);
+			if(count($pcs)>2){
+				$segment = $pcs[1];
+				if(array_key_exists($segment,$segmts)){
+					if($segmts[$segment]>2){
 						?>
-							<!-- input con menu -->
-							<div class="form-group form-group-sm">
-								<label for="<?php echo $id; ?>" class="control-label col-md-4"><?php echo $info_label; ?></label>
-								<div class="col-md-6">
-									<div class="input-group input-group-sm">
-									  <input type="text" class="form-control" name="<?php echo $id; ?>" id="<?php echo $id; ?>" placeholder="<?php echo $id; ?>" value="">
-									  <div class="input-group-btn">
-										<button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"> <span class="caret"></span></button>
-										<ul class="dropdown-menu dropdown-menu-right">
-										<?php
-											foreach($forced_val as $val){
-												echo '<li><a input="'.$id.'">'.$val."</a></li>";
-											}
-										?>
-										</ul>
-									  </div>
-									</div>
-								</div>
+						<!-- variable -->
+						<div class="form-group form-group-sm" style="" >
+							<div class="col-md-9 col-md-offset-3 text-left">
+								<small style="text-decoration: underline;text-transform: uppercase;"><?php echo $segment; ?></small>
 							</div>
-							
-
-							<!-- scelta tra valori 
-							<div class="form-group form-group-sm radio_buttons optional user_horizontal_sex">
-								<label class="radio_buttons control-label col-md-4"><?php echo $info_label; ?></label>
-								<div class="col-md-6">
-								<input type="text" class="form-control" name="<?php echo $id; ?>" id="<?php echo $id; ?>" placeholder="<?php echo $id; ?>" value="">
-								<?php
-								
-									foreach($forced_val as $value){
-										$val_id = $id."_".$value;
-										$val_name= $id;
-										?>
-										
-											<label class="radio-inline radio-inline">
-											
-												<input type="radio" name="<?php echo $val_name; ?>" id="<?php echo $val_id; ?>" value="<?php echo $value; ?>"> <?php echo str_replace("_"," ", $value); ?>
-											</label>
-										<?php
-									}
-								
-								?>
-								<?php if($field['info']!=""){ ?><p class="help-block"> <?php echo $field['info']; ?> </p><?php } ?>
-								</div>
-							</div>
-							-->
-						
+						</div>
 						<?php
-						
-					} else {
-						//Input normale
-						
-						?>
-							<!-- variable -->
-							<div class="form-group form-group-sm">
-								<label for="<?php echo $id; ?>" class="control-label col-md-4"><?php echo $info_label; ?></label>
-								<div class="col-md-6">
-									<input type="text" class="form-control" name="<?php echo $id; ?>" id="<?php echo $id; ?>" placeholder="<?php echo $id; ?>" value="<?php echo $forced_val;?>">
-									<?php if($field['info']!=""){ ?><span class="help-block"> <?php echo $field['info']; ?> </span><?php } ?>
-								</div>
-							</div>
-						<?php
-						
 					}
-				
-
-					break;
+					unset ($segmts[$segment]);
+				}
+			}
+			*/
+			
+			print_var($field);
 		}
-		
-		
 	}
 	
 }
+	function print_var($field,$add=false){
+		global $form;
+		
+		//E' un aggiunta ad un campo precedente?
+		$id = $field['id'];
+		if($add){
+			 $info_label="...in lettere";
+			 $pos1=7;
+			 $pos2=4;
+		}else{
+			 $info_label = ($field['label']!="" ? $field['label'] : $field['id']); 
+			 $pos1=6;
+			 $pos2=5;
+		}
+		$info_label = str_replace("_", " ", $info_label);
+		
+		//suffisso _lettere
+		$suffisso = "_lettere";
+		$f_add = false;
+		if(!$add){
+			if ( endsWith($id, "_lettere") && array_key_exists(substr($id,0,strlen($suffisso)*-1),$form)) return;
+			if (array_key_exists($id."_lettere",$form) ) { $f_add=true; }
+		}
+			
+		//Gestisci Valori
+		$forced_val = "";
+		$forced_type = "";
+		if(array_key_exists("val",$field)){
+			if($field['val']!=""){
+				$forced_val = explode(",",$field['val']);
+				$forced_val = array_filter($forced_val);
+				if(count($forced_val)>1){
+					//valori obbligatori
+					$forced_type = "list";
+				} else {
+					//valore predefinito
+					$forced_type = "value";
+				}
+			}
+		}
+		
+		//Mostra sempre o nascondi
+		$hide = form_var_to_hide($id);
+		
+		//Seleziona tipologia
+		if($forced_type=="list"){
+			//Dropdown
+			// placeholder="< ?php echo $id; ? >"
+			?>
+				<!-- input con menu -->	
+				<div class="form-group form-group-sm" style="<?php if($hide) echo "display:none; "; if($f_add) echo "margin-bottom:5px !important;";?>">
+					<label for="<?php echo $id; ?>" class="control-label col-md-<?php echo $pos1; ?>"><?php echo $info_label; ?></label>
+					<div class="col-md-<?php echo $pos2; ?>">
+						<div class="input-group input-group-sm">
+						  <input type="text" title="<?php echo $id; ?>" class="form-control" name="<?php echo $id; ?>" id="<?php echo $id; ?>" value="">
+						  <div class="input-group-btn">
+							<button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"> <span class="caret"></span></button>
+							<ul class="dropdown-menu dropdown-menu-right">
+							<?php
+								foreach($forced_val as $val){
+									echo '<li><a input="'.$id.'">'.$val."</a></li>";
+								}
+							?>
+							</ul>
+						  </div>
+						</div>
+					</div>
+				</div>
+				
+			<?php
+			
+		} else {
+			//Input normale
+			?> 
+				<!-- variable -->
+				<div class="form-group form-group-sm" style="<?php if($hide) echo "display:none;"; if($f_add) echo "margin-bottom:5px !important;";?>" >
+					<label for="<?php echo $id; ?>" class="control-label col-md-<?php echo $pos1; ?>"><?php echo $info_label; ?></label>
+					<div class="col-md-<?php echo $pos2; ?>">
+						<input type="text" title="<?php echo $id; ?>" class="form-control" name="<?php echo $id; ?>" id="<?php echo $id; ?>"  value="<?php echo $forced_val;?>">
+						<?php if($field['info']!=""){ ?><span class="help-block"> <?php echo $field['info']; ?> </span><?php } ?>
+					</div>
+				</div>
+			<?php
+		}
+		
+		// suffisso _lettere
+		if ($f_add) {
+			$field_add = get_var($form,$id."_lettere");
+			print_var($field_add,true);
+		}
+		
+	}
 
+function form_relations($form){
+	
+	$val = Array();
+	$val['*'] = Array();
+	
+	foreach ($form as $field) {
+		
+		$id = $field['id'];
+		if($field['tipo']=="var"){
+			
+			if(!array_key_exists("id",$val['*'])){
+				sort($field["valid"]);
+				foreach ($field["valid"] as $condition){
+					if($condition=='*') {
+						$val['*'][] = $id;
+						break;
+					}else{
+						$s = explode("=",$condition);
+						$campo = $s[0];
+						$valore = $s[1];
+						$val[$campo][]=$id;
+						$val[$campo] = array_unique($val[$campo]);
+					}
+				}						
+			}
+			
+		}
+		
+	}
+	//var_dump($val);
 
+	return $val;
+}
+function form_validity($form){
+	
+	$val = Array();
+	$val['*'] = Array();
+	
+	foreach ($form as $field) {
+		
+		$id = $field['id'];
+		if($field['tipo']=="var"){
 
+			if(!array_key_exists("id",$val['*'])){
+				sort($field["valid"]);
+				foreach ($field["valid"] as $condition){
+					if($condition=='*') {
+						$val['*'][] = $id;
+						break;
+					}else{
+						$s = explode("=",$condition);
+						$campo = $s[0];
+						if(!(strpos($condition,"|")===false)){
+							$valore = explode("|",$s[1]);
+							foreach ($valore as $v)
+								$val[$id][$campo][]=$v;
+						}else {
+							$valore = $s[1]; //explode("|",$s[1]);
+							$val[$id][$campo][]=$valore;
+						}
+						$val[$id][$campo] = array_unique($val[$id][$campo]);
+					}
+				}						
+			}
+			
+		}
+		
+	}
+	unset($val['*']);
+	//var_dump($val);
+	
+	return $val;
+}
+
+function form_validityrel($form){
+	
+	$val = Array();
+	$val['*'] = Array();
+	$val2 = Array();
+	$val3 = Array();
+	
+	foreach ($form as $field) {
+		
+		$id = $field['id'];
+		if($field['tipo']=="var"){
+			
+			//echo $id;
+			//var_dump($field["valid"]);
+			
+			// validità costruisci array
+			// da : id da attivare -> campo -> val
+			// a : campo -> valore -> id da attivare
+			if(!array_key_exists("id",$val['*'])){
+				sort($field["valid"]);
+				foreach ($field["valid"] as $condition){
+					if($condition=='*') {
+						$val['*'][] = $id;
+						break;
+					}else{
+						$s = explode("=",$condition);
+						$campo = $s[0];
+						$valore = $s[1];
+						$val[$campo][$valore][]=$id;
+						$val2[$id][$campo][]=$valore;
+						$val3[$campo][]=$id;
+						$val[$campo][$valore] = array_unique($val[$campo][$valore]);
+					}
+				}						
+			}
+			
+		}
+		
+	}
+	//var_dump($val3);exit;
+	
+	//Cancella eventuali record in $val[][][$id]
+	/*foreach($val['*'] as $field){
+		foreach ($val as $id => &$arr_v){
+			if ($id!= '*')
+			foreach($arr_v as $v => &$id){
+				if($id==$field){
+					echo $id.">".$v." ".$id."-".$field."<br>\n";
+					//unset($arr_v[$v]);
+				}
+			}
+		}
+	}*/
+	
+	//var_dump($val);
+	//exit;
+
+	return $val;
+}
+
+function form_var_to_hide($id){
+	global $field_relations;
+	global $field_validity;
+	global $form;
+	global $form_data;
+	
+	//determina se mostrare per defualt una variabile oppure nasconderla
+
+	// variabili presenti nel corpo del testo (non dentro a dei se)
+	if( in_array($id, $field_relations['*']) ) {
+		return false;
+	}
+	
+	//controllo campi relazionati e loro valori
+	if( in_array($id, $field_validity) ) {
+		foreach($field_validity[$id] as $field_related ){
+			$current_val = get_data_val_id($form_data,$field_related);
+			//verifica valori
+			foreach($field_validity[$id][$field_related] as $value ){
+				if($current_val==$condition_val){
+					return false;
+				}
+			}
+		}
+	}
+	
+	return true;
+}
+
+//prendi il nome della variabile ritenuta 'soggetto' del form
+function form_type_subject_var($vars){
+	//Seleziona nome cliente
+	$key_matr = Array(	Array('cliente','nome'),
+						Array('cliente','intestazione'),
+						Array('soggetto','stipulante'),
+						Array('soggetto','firmatario')
+				);
+	$ret = false;
+	foreach ($vars as $var) {
+		if(array_key_exists("name",$var)){
+			foreach ($key_matr  as $key_array) {
+				$ret = true;
+				foreach ($key_array as $key)
+					if(strpos($var->name, $key) === false) { $ret = false; break; }
+				if($ret) return $var->name;
+			}
+		}
+	}
+	return $ret;
+}
 
 //DEBUG
 
@@ -793,6 +1021,7 @@ function text_compose($form,&$p,$data){
 	
 		//Debug
 		//var_dump($field);exit;
+		//echo($p);exit;
 		//var_dump($form);exit;
 		//echo str_replace("<par>","<br>",$listp);
 		$dbg_choice = false;
@@ -802,20 +1031,124 @@ function text_compose($form,&$p,$data){
 		
 		//Elabora
 		foreach ($form as $var) {
-			//var_dump($var);
 			$var_id = $var['id'];
+			
+			//debug
+			//var_dump($var);
 			//echo "\n<br>".$var_id." - >".$var['tipo']."<";
+			
+			//Trova Valore
+			if(in_array($var['tipo'],Array("var","se","sed"))){
+				//prendi valore in form salvato
+				$var_value = get_data_val($data,$var);
+			
+				//Esamina eventuali valori calcolo
+				if(array_key_exists('val_calc',$var)){
+					if($var['val_calc']!=""){
+						$val_calc = str_var_replace($form,$data,$var['val_calc']);
+						//calcola
+						$var_value = calculate_string($val_calc);
+					}
+				}
+			}
 			
 			//Sostituisci tutte le variabili
 			if($var['tipo']=="var"){
 				
-				//Trova valore
-				$var_value = strtolower(get_data_val($data,$var));
-				
 				//Sostituisci
-				$pattern = "/[\[](".$var_id.")[\s]*[\]]/i";
+				$pattern = '/[\[]('.$var_id.')[\s]*[\]]/i';
 				$p = preg_replace($pattern, $var_value, $p);
+				
+				//VAR con sect
+				//se questa varabile ha un campo sect significa che esiste un [se#%var%=qualcosa]aaaa[/se]
+				if(array_key_exists('sect',$var)){
+					//
+					//v.1 	[\[](?:se#prova)[=]([^\]\|]*)((?:[\|](?:[!])?(?:\w*))*)?[^\]]*[\]](.*?)(?:\[altrimenti#prova\](.*?))?(?:\[\/se#prova])
+					//
+					// [se#prova=!condizione|!qwe] testo1 [altrimenti#prova]  testo2  [/se#prova]
+					//			group #1 =>	!condizione
+					//			group #2 =>	|!qwe
+					//			group #3 =>	testo1
+					//			group #4 =>	testo2
+					
+					$pattern = "/[\[](?:se#".$var_id.")[=]([^\]\|\&]*)((?:[\|\&](?:[!])?(?:\w*))*)?[^\]]*[\]](.*?)(?:\[altrimenti#".$var_id."\](.*?))?(?:\[\/se#".$var_id."])/";
+					
+					$p = preg_replace_callback(	$pattern,
+												function ($matches) use ($var_id,$var_value,$form,$data)  {
+													global $dbg_choice;
+													//debug
+													//$dbg_choice = true;
+													if($dbg_choice) echo "\n<br>Trovato\n (val:".$var_value.")";
+													if($dbg_choice) var_dump($matches)."\n\n";
+													//0 -> contenuto completo (da sostituire)
+													//1 -> condizione					(!testo oppure testo)
+													//2 -> altre condizioni
+													//3 -> contenuto del se				(valore da retituire se true true)
+													//4 -> contenuto dell'altrimenti	(valore da retituire se true falso)
+													
+													//Imposta valore falso - se trovi una condizione vera cambialo
+													$out_value_false = count($matches)>3 ? @$matches[4] : "";
+													$out_value_true = $matches[3];
+													$out_bool = false;
+													
+													//Analisi prima condizione
+													$c_val = $matches[1];
+													$c_neg = false;
+													if($c_val{0}=="!"){
+														$c_val = substr($c_val,1);
+														$c_neg = true;
+													}
+													//Sostituisci eventuali variabili
+													$c_val = str_var_replace($form,$data,$c_val);
+													//valuta
+													$out_bool = compare($out_bool, "|", $c_neg, $var_value, $c_val);
+													if($dbg_choice) echo "se $var_id (neg: '$c_neg' cond: '$c_val' val: '".$var_value."' result:'$out_bool')";
+													
+													// Analisi condizioni aggiuntive
+													if($matches[2]!=""){
+														// Parsa eventuali altre condizioni
+														$pattern = '/([|&])/';
+														$parts = preg_split( $pattern, $matches[2], -1, PREG_SPLIT_NO_EMPTY|PREG_SPLIT_DELIM_CAPTURE);
+														for ($i=0, $n=count($parts)-1; $i<$n; $i+=2) {
+															$cond[] = $parts[$i].$parts[$i+1];
+														}
+														//Per ogni condizione
+														foreach($cond as $c){
+															$c_op = $c{0};		//operatore
+																$c_neg = false;
+																$c_val = "";		//id
+																if($c{1}=="!") {
+																	//neg
+																	$c_neg = true;
+																	$c_val = substr($c,2);
+																} else {
+																	//normal
+																	$c_neg = false;
+																	$c_val = substr($c,1);
+																}
+															//Valore condizione
+															$c_val = str_var_replace($form,$data,$c_val);
+															//Valuta
+															$out_bool = compare($out_bool, $c_op, $c_neg, $var_value, $c_val);
+															if($dbg_choice) echo " $c_op (neg: '$c_neg' cond:'$c_val' val:'$var_value' result:'$out_bool')"; 
+														}
+													}
+													
+													//Ritorna valore
+													if($out_bool) return $out_value_true; else return $out_value_false;
+												},
+												$p );
+					
+					//debug
+					//echo $var_id;
+					//exit;
+					
+				}
+				
 			}
+			
+
+
 			
 			
 			if($var['tipo']=="se"){
@@ -829,9 +1162,6 @@ function text_compose($form,&$p,$data){
 				//			group #3 =>	a		contenuto	se true
 				//			group #4 =>	b		contenuto	se false	<= solo v.3
 				
-				//Trova Valore
-				$var_value = get_data_val($data,$var);
-				
 				//echo "\n";
 				//echo $var_id."\n";
 				$pattern = "/[\[](?:se#)([!])?(?:".$var_id.")((?:[\|](?:[!])?(?:\w*))*)?[^\]]*[\]](.*?)(?:\[altrimenti#".$var_id."\](.*?))?(?:\[\/se#".$var_id."])/i";
@@ -839,6 +1169,8 @@ function text_compose($form,&$p,$data){
 				$p = preg_replace_callback(	$pattern,
 												function ($matches) use ($var_id,$var_value,$form,$data)  {
 													global $dbg_choice;
+													//debug
+													//$dbg_choice = true;
 													//echo "\n<br>Trovato\n (val:".$var_value.")";
 													//var_dump($matches)."\n\n";
 													//0 -> contenuto completo (da sostituire)
@@ -922,14 +1254,10 @@ function text_compose($form,&$p,$data){
 				//$pattern = "/[\[](?:se ".$var_id." )([!])?(\w+)((?:[\|](?:[!])?(?:\w*))*)?[^\]]*[\]](.*?)(\[altrimenti (?:\w+)\](?:.*))*(?:\[\/se])/";
 				$pattern = "/[\[](?:se#".$var_id." )([!])?(\w+)((?:[\|](?:[!])?(?:\w*))*)?[^\]]*[\]](.*?)((?:\[altrimenti#".$var_id."(?: \w+)?\](?:.*?))*)(?:\[\/se#".$var_id."])/i";
 				
-				//Trova Valore
-				$var_value = get_data_val($data,$var);
-				
-				
 				$p = preg_replace_callback(	$pattern,
 												function ($matches) use ($var_id,$var_value,$form,$data)  {
 													global $dbg_choice;
-													
+													//$dbg_choice = true;
 													//var_dump($matches)."\n\n";
 													//0 -> contenuto completo (da sostituire)
 													//1 -> eventuale negazione
@@ -988,7 +1316,7 @@ function text_compose($form,&$p,$data){
 													// group #5 =>	[altrimenti d]d[altrimenti e]e
 													if(!$out_bool){
 														if(@$matches[5]!=""){
-															$pattern = '/\[altrimenti(?: )?(\w+)?\]([^\[]*)/i';
+															$pattern = '/\[altrimenti#'.$var_id.'(?: )?(\w+)?\]([^\[]*)/i';
 															preg_match_all($pattern,$matches[5],$cond_false, PREG_SET_ORDER);
 															//Parsa condizioni falso
 															//var_dump($cond_false);//exit;
@@ -1021,28 +1349,32 @@ function text_compose($form,&$p,$data){
 			
 		}
 		
-		//Sostituisci Articolo
+		//Sostituisci Articolo / comma
 		$articolo = 0;
 		$comma = 0;
-		$p = preg_replace_callback(	"(\[articolo\]|\[comma\])",
+		$p = preg_replace_callback(	'/\[(articolo)(?:\s?(\d+)\s?)?\]|\[(comma)(?:\s?(\d+)\s?)?\]/i',
 										function ($matches) {
 											global $articolo;
 											global $comma;
-
+											//var_dump($matches);
+											//var_dump(sizeof($matches));
 											//Controlla Variabili di sistema
 											$var_value = "";
-											switch($matches[0]){
-												case "[articolo]":
-													$articolo = $articolo + 1;
+											if(sizeof($matches)<=2){
+													if($matches[1]!="")
+														$articolo = $articolo + 1;
+													else
+														$articolo = $matches[1];
 													$comma = 0;
 													$var_value = $articolo;
-												break;
-												case "[comma]":
-													$comma = $comma + 1;
-													$var_value = $comma;
-												break;
+											} else if(sizeof($matches)>2) {
+													if(sizeof($matches)>4)
+														$comma = $matches[4];
+													else
+														$comma = $comma + 1;
+														$var_value = $comma;
 											}
-											
+											//var_dump($var_value);
 											return $var_value;
 											
 										},
@@ -1170,7 +1502,66 @@ function text_clean($p){
 }
 
 
-/*
+/* Funzioni su $data / $form
+*/
+
+function get_data_val($data,$var){
+	//echo $var;
+	foreach ($data as $v) {
+		if(@$v->name){
+			if($v->name==$var['id']){
+				return $v->value;
+			}
+		}
+	}
+	if($var['tipo']=="var"){
+		return "............";
+	}else{
+		return false;
+	}
+}
+function get_data_val_id($data,$id){
+	return get_data_val($data, Array('tipo'=>'', 'id'=>$id ) ) ;
+}
+function get_var($form,$id){
+	foreach ($form as $var) {
+		if($var['id']==$id)
+			return $var;
+	}
+	return null;
+}
+function get_all_var_id($form){
+	$vars = Array();
+	foreach ($form as $var) {
+		if($var['tipo']=="var")
+			$vars[] = $var['id'];
+	}
+	return $vars;
+}
+function get_all_id($form){
+	$vars = Array();
+	foreach ($form as $var) {
+			$vars[] = $var['id'];
+	}
+	return $vars;
+}
+
+//sostituisci variabili in stringa
+function str_var_replace($form,$data,$val_calc){
+	//foreach(get_all_var_id($form) as $v){		//solo var
+	foreach(get_all_id($form) as $v){		//anche se
+		if(strpos($val_calc,$v) !== false){
+			$val_calc = str_replace($v,get_data_val_id($data,$v),$val_calc);
+		}
+	}
+	return $val_calc;
+}
+
+
+
+/* Funzioni Generiche
+*/
+
 function preg_replace_callback_offset($pattern, $callback, $subject, $limit = -1, &$count = 0) {
     if (is_array($subject)) {
         foreach ($subject as &$subSubject) {
@@ -1196,49 +1587,24 @@ function preg_replace_callback_offset($pattern, $callback, $subject, $limit = -1
         if (!$result) break;
         $pos     = $matches[0][1];
         $len     = strlen($matches[0][0]);
-        $replace = call_user_func($callback, $matches );
-		//check for empty par
-		if($replace==""){
-			var_dump($matches);
-			echo substr($buffer,$pos+$len,5); exit;
-			if(substr($buffer,$pos+$len,5)=="<par>"){
-				echo "siii!";exit;
-			}
-		}
-		$buffer = substr_replace($buffer, $replace, $pos, $len);
+        $replace = call_user_func($callback, $matches[0]);
+        $buffer = substr_replace($buffer, $replace, $pos, $len);
         $offset = $pos + strlen($replace);
         $count++;
     }
     return $buffer;
-}*/
-
-
-function get_data_val($data,$var){
-	//echo $var;
-	foreach ($data as $v) {
-		if(@$v->name){
-			if($v->name==$var['id']){
-				return $v->value;
-			}
-		}
-	}
-	if($var['tipo']=="var"){
-		return "............";
-	}else{
-		return false;
-	}
 }
-function get_data_val_id($data,$id){
-	return get_data_val($data, [ 'tipo'=>'', 'id'=>$id ] ) ;
+function startsWith($haystack, $needle) {
+    // search backwards starting from haystack length characters from the end
+    return $needle === "" || strrpos($haystack, $needle, -strlen($haystack)) !== FALSE;
+}
+function endsWith($haystack, $needle) {
+    // search forward starting from end minus needle length characters
+    return $needle === "" || (($temp = strlen($haystack) - strlen($needle)) >= 0 && strpos($haystack, $needle, $temp) !== FALSE);
 }
 
-function get_var($form,$id){
-	foreach ($form as $var) {
-		if($var['id']==$id)
-			return $var;
-	}
-}
 
+// Compara condizioni
 function compare($in_bool, $operator, $neg, $expr, $value)
 {
    switch(strtolower($operator)) {
@@ -1256,26 +1622,4 @@ function compare($in_bool, $operator, $neg, $expr, $value)
          throw new Exception("Invalid operator '$operator'");
    }
 }  
-
-//prendi il nome della variabile ritenuta 'soggetto' del form
-function doc_type_subject_var($vars){
-	//Seleziona nome cliente
-	$key_matr = [ 	['cliente','nome'],
-					['cliente','intestazione'],
-					['soggetto','stipulante'],
-					['soggetto','firmatario']
-				];
-	$ret = false;
-	foreach ($vars as $var) {
-		if(array_key_exists("name",$var)){
-			foreach ($key_matr  as $key_array) {
-				$ret = true;
-				foreach ($key_array as $key)
-					if(strpos($var->name, $key) === false) { $ret = false; break; }
-				if($ret) return $var->name;
-			}
-		}
-	}
-	return $ret;
-}
 ?>

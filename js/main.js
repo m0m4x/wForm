@@ -88,7 +88,6 @@
 		}
 		
 		//Alert
-		
 		function view_alert(type,message,delay){
 			if(typeof delay === 'undefined') delay = 2000;
 			var n = noty({
@@ -116,17 +115,170 @@
 			$('.btn-crea').click(reqDoc);
 			
 			//notifica cambiamento
-			$("form :input").change(function() {
-			  ui_update_updtstatus(false);
-			});
+			$("form :input").change(checkformChange);
 			
 			//dropdown testo in input
-			$('.dropdown-menu li a').click(function(e) {
-				//window.alert($(this).attr('input'));
+			$('.dropdown-menu li a').on('click', function(e) {
 				$("input#"+$(this).attr('input')).val($(this).text());
+				//checkformChange nel contesto di input
+				var dupfunction = $.proxy( checkformChange, $("input#"+$(this).attr('input')) );
+				dupfunction();
 			});
 			
 		}); 
+		
+	/* Modifiche al form */
+	
+	function checkformChange() {
+		
+		console.log("Cambiato: "+$(this).attr('id'));
+		
+		//Check se abilita o nascondi variabile
+		ui_show_var($(this));
+		
+		//Aggiurna status documento
+		ui_update_updtstatus(false);
+	}
+	
+	function ui_show_var(dom){
+
+		console.log('check richiesto da dom '+dom.attr('id')+" "+$(this).text());
+		
+		//prendi dati
+		var type = dom.attr('type');
+			//Check se è input snoppa
+			if (type == "input") return;
+			//Check se è presente in *
+				//non necessario?
+		var name = dom.attr('name');
+		var id = dom.attr('id');
+		var dom_val = get_dom_val(dom);
+		//view_alert("info",dom_val);
+		
+		//parsa relazioni
+			//per ogni relazione controlla condizioni e mostra/nascondi di conseguenza
+		var todisable = [];
+		var toenable = [];
+		if( name in field_relations ) {
+			console.log("Analizzo "+name);
+			//per ogni campo relazionato
+			for (var related_key in field_relations[name]) {
+				//debug
+				console.log(" Campo relazionato: "+field_relations[name][related_key]);
+				var related = field_relations[name][related_key];
+				var conditions_res = new Array(); 
+				// related è l'id del campo relazionato a quello modificato
+				// prendo tutte le condizioni e controllo i valori
+				for(var condition in field_validity[related]){
+					var cond_res;
+					// prendo il valore del campo condizione
+					var c_dom = get_dom_byid(condition);
+					if(!c_dom.length){ return; /*valore del dom non trovato*/ }
+					var c_dom_val = get_dom_val(c_dom);
+					//debug
+					console.log("                                      condizione:"+condition);
+					console.log("             valore attuale del campo condizione:"+c_dom_val);
+					//per ogni valore condizione
+					var res = false;
+					for(var value_key in field_validity[related][condition]){
+						var value = field_validity[related][condition][value_key];
+						//debug
+						console.log("                         valore della condizione:"+value);
+						//Check se inizia con !
+						var c_bool = true;
+						if(value.substring(0, 1)=="!"){
+							c_bool = false;
+							value = value.substring(1);
+						}
+						//valuta
+						if((c_dom_val==value) === c_bool){
+							conditions_res.push(true);
+							res = true;
+							console.log("                         > vero");
+							break; //basta che 1 sia vera
+						}
+					}
+					//Nessuna vera, metti falso
+					if(!res){
+						conditions_res.push(false);
+						console.log("                         > falso");	
+					}
+				}
+				//valuta
+				var to_hide = false;
+				for(var cond_res in conditions_res){
+					console.log(conditions_res[cond_res]);
+					if( !conditions_res[cond_res] ) {
+						to_hide = true;
+						console.log("nascondo");
+						break;
+					}
+				}
+				//aggiungi a hide o show
+				if(to_hide){
+					todisable.push(related);
+					//console.log('da disabilitare '+related);
+				} else {
+					toenable.push(related);
+					//console.log('da abilitare '+related);
+				}
+			}
+		}
+		//Nascondi
+		var i;
+		for (i = 0; i < todisable.length; ++i) {
+			//view_alert("info","disabilitato "+todisable[i]);
+			var dom = get_dom_byid(todisable[i]);
+				if(dom.length){ dom.closest('div.form-group').hide(); } else { 
+					//console.log('disabilita dom '+todisable[i]+' non trovato'); 
+				}
+		}
+		//Abilita
+		var i;
+		for (i = 0; i < toenable.length; ++i) {
+			//view_alert("info","disabilitato "+todisable[i]);
+			var dom = get_dom_byid(toenable[i]);
+				if(dom.length){ dom.closest('div.form-group').show(); }  else { 
+					//console.log('abilita dom '+toenable[i]+' non trovato');
+				}
+		}
+		
+	}
+	
+	function get_dom_byid(id){
+		var dom;
+		//cambia dal tipo
+		if ( $( '#'+id ).length ) {
+			//è checkbox
+			dom = $('#'+id);
+		} else {
+			//è radio
+			dom = $('input[name='+id+']:checked');
+		}
+		if(!(dom.length)){
+			console.log(id+"non trovato!");
+			return false;
+		}
+		//console.log(id+"trovato "+dom.length);
+		return dom;
+	}
+	function get_dom_val(dom){
+
+		var val = "";
+		//window.alert("getVal " + dom.attr('id'));
+		switch(dom.attr('type')) {
+			case 'checkbox':
+				val = 0;
+				if($('#'+dom.attr('id')+':checked').prop('checked')) val = 1;
+				break;
+			case 'radio':
+			default:
+				val = dom.val();
+				break;
+		}
+		//console.log("getVal" + val);
+		return val;
+	}
 	
 	/* Carica */
 	
@@ -167,18 +319,24 @@
 		//carica
 		for (var i in form_data) {
 			var obj = form_data[i];
-			//alert(obj['name']);
-			
-			//alert($(':input[name="'+obj['name']+'"]').attr('type'));
-			switch($('input[name="'+obj['name']+'"]').attr('type')) {
-				case 'radio':
-				case 'checkbox':
-					$('input[name="'+obj['name']+'"][value='+obj['value']+']').prop('checked', true);
-					break;
-				default:
-					$('input[name="'+obj['name']+'"]').val(obj['value']);
-			} 
-			
+			if( i!="0" ){
+				//alert(obj['name']);
+				//alert($(':input[name="'+obj['name']+'"]').attr('type'));
+				var dom ;
+				switch($('input[name="'+obj['name']+'"]').attr('type')) {
+					case 'radio':
+					case 'checkbox':
+						dom = $('input[name="'+obj['name']+'"][value='+obj['value']+']');
+						dom.prop('checked', true);
+						break;
+					default:
+						dom = $('input[name="'+obj['name']+'"]');
+						dom.val(obj['value']);
+				}
+				
+				//Relazioni di validità
+				ui_show_var(dom);
+			}
 		}
 		
 		//Check Button
@@ -299,10 +457,10 @@
 		}
 		function genPdf(){
 			return; //non disponibile
-			if(getID()=='') return;
-			//Redirect
-			ui_alert_disable = true;
-			window.location.href = "lib/req_word.php?action=gen&format=pdf&id="+getID();
+			//if(getID()=='') return;
+			////Redirect
+			//ui_alert_disable = true;
+			//window.location.href = "lib/req_word.php?action=gen&format=pdf&id="+getID();
 		}
 
 	
