@@ -428,7 +428,7 @@ function form_load($doc_type,&$p){
 										//Get se stack for conditionated values
 										//echo $id."=>".get_last_se($stack_se)."<br>\n";
 										//$validity[] = get_last_se_validity($stack_se);
-										$validity = get_se_validity($stack_se);
+										$validity[] = get_se_validity($stack_se);
 										
 										//check if "id" exist
 										if (!array_key_exists($id,$form) ) {	//is_null(get_var($form,$opcodes[0]))
@@ -868,16 +868,19 @@ function form_relations($form){
 			
 			if(!array_key_exists("id",$val['*'])){
 				sort($field["valid"]);
-				foreach ($field["valid"] as $condition){
-					if($condition=='*') {
-						$val['*'][] = $id;
-						break;
-					}else{
-						$s = explode("=",$condition);
-						$campo = $s[0];
-						$valore = $s[1];
-						$val[$campo][]=$id;
-						$val[$campo] = array_unique($val[$campo]);
+				foreach ($field["valid"] as $condition_serie){
+					//TODO - SI PRENDONO TUTTI CORRETTO?
+					foreach ($condition_serie as $condition){
+						if($condition=='*') {
+							$val['*'][] = $id;
+							break;
+						}else{
+							$s = explode("=",$condition);
+							$campo = $s[0];
+							$valore = $s[1];
+							$val[$campo][]=$id;
+							$val[$campo] = array_unique($val[$campo]);
+						}
 					}
 				}						
 			}
@@ -901,24 +904,32 @@ function form_validity($form){
 
 			if(!array_key_exists("id",$val['*'])){
 				sort($field["valid"]);
-				foreach ($field["valid"] as $condition){
-					if($condition=='*') {
-						$val['*'][] = $id;
-						break;
-					}else{
-						$s = explode("=",$condition);
-						$campo = $s[0];
-						if(!(strpos($condition,"|")===false)){
-							$valore = explode("|",$s[1]);
-							foreach ($valore as $v)
-								$val[$id][$campo][]=$v;
-						}else {
-							$valore = $s[1]; //explode("|",$s[1]);
-							$val[$id][$campo][]=$valore;
+				foreach ($field["valid"] as $condition_serie){
+					//parsa tutte le condizioni con "E" all'interno di un unica condizione
+					$cond = Array();
+					foreach ($condition_serie as $condition){
+						if($condition=='*') {
+							$val['*'][] = $id;
+							break;
+						}else{
+							$s = explode("=",$condition);
+							$condition_campo = $s[0];
+							$condition_str = $s[1];
+							if(!(strpos($condition,"|")===false)){
+								//presenti OR
+								$condition_vals = explode("|",$condition_str);
+								foreach ($condition_vals as $valore)
+									$cond[$condition_campo][]=$valore;
+							}else {
+								//nessun OR
+								$valore = $condition_str; //explode("|",condition_str);
+								$cond[$condition_campo][]=$valore;
+							}
+							$cond[$condition_campo] = array_unique($cond[$condition_campo]);
 						}
-						$val[$id][$campo] = array_unique($val[$id][$campo]);
 					}
-				}						
+					if(!empty($cond)) { $val[$id][] = $cond; }
+				}
 			}
 			
 		}

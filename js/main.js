@@ -142,7 +142,9 @@
 	
 	function ui_show_var(dom){
 
-		console.log('check richiesto da dom '+dom.attr('id')+" "+$(this).text());
+		var debug = false;
+	
+		if(debug) console.log('check richiesto da dom '+dom.attr('id')+" "+$(this).text());
 		
 		//prendi dati
 		var type = dom.attr('type');
@@ -160,66 +162,94 @@
 		var todisable = [];
 		var toenable = [];
 		if( name in field_relations ) {
-			//console.log("Analizzo "+name);
+			if(debug) console.log("Analizzo "+name);
 			//per ogni campo relazionato
 			for (var related_key in field_relations[name]) {
 				//debug
-				//console.log(" Campo relazionato: "+field_relations[name][related_key]);
+				if(debug) console.log(" Campo relazionato: "+field_relations[name][related_key]);
 				var related = field_relations[name][related_key];
-				var conditions_res = new Array(); 
+				var conditions_series_res = new Array(); 
 				// related è l'id del campo relazionato a quello modificato
-				// prendo tutte le condizioni e controllo i valori
+				// prendo tutte le condizioni e controllo i campi e relativi valori
+				// related > 
+				//			condizione 1
+				//					campo1 => 	valore1
+				//								valore2
+				//					campo2 =>	valore1
+				//								valore2
+				//			condizione 2
+				//						...
+				//
+				//			condizioni OR
+				//					campi E
+				//								valori OR
+				//
 				for(var condition in field_validity[related]){
-					var cond_res;
-					// prendo il valore del campo condizione
-					var c_dom = get_dom_byid(condition);
-					if(!c_dom.length){ return; /*valore del dom non trovato*/ }
-					var c_dom_val = get_dom_val(c_dom);
-					//debug
-					//console.log("                                      condizione:"+condition);
-					//console.log("             valore attuale del campo condizione:"+c_dom_val);
-					//per ogni valore condizione
-					var res = false;
-					for(var value_key in field_validity[related][condition]){
-						var value = field_validity[related][condition][value_key];
+					if(debug) console.log("                  condizione:"+condition);
+					var condition_res = false; 
+					for(var condition_field in field_validity[related][condition]){
+						var cond_res;
+						// prendo il valore del campo da valutare
+						var c_dom = get_dom_byid(condition_field);
+						if(!c_dom.length){ return; /*valore del dom non trovato*/ }
+						var c_dom_val = get_dom_val(c_dom);
 						//debug
-						//console.log("                         valore della condizione:"+value);
-						//Check se inizia con !
-						var c_bool = true;
-						if(value.substring(0, 1)=="!"){
-							c_bool = false;
-							value = value.substring(1);
+						if(debug) console.log("                                      campo:"+condition_field);
+						if(debug) console.log("                   valore attuale del campo:"+c_dom_val);
+						//per ogni valore ammesso controlla se almeno 1 è vero (O)
+						var res = false;
+						for(var condition_value in field_validity[related][condition][condition_field]){
+							var value = field_validity[related][condition][condition_field][condition_value];
+							//debug
+							if(debug) console.log("                                   valore ammesso:"+value);
+							//Check se inizia con !
+							var c_bool = true;
+							if(value.substring(0, 1)=="!"){
+								c_bool = false;
+								value = value.substring(1);
+							}
+							//valuta
+							if((c_dom_val==value) === c_bool){
+								res = true;
+								if(debug) console.log("                                                  !vero");
+								//necessario che solo 1 sia vero
+								break; 
+							}
 						}
-						//valuta
-						if((c_dom_val==value) === c_bool){
-							conditions_res.push(true);
-							res = true;
-							//console.log("                         > vero");
-							break; //basta che 1 sia vera
+						//se nessun valore soddisfatto per questo campo esci subito (E)
+						if(!res){
+							condition_res = false;
+							if(debug) console.log("                  condizione:"+condition+" > FALSO!");	
+							//esci dal for - basta che 1 sia falsa
+							break;
+						} else {
+							condition_res = true;
 						}
 					}
-					//Nessuna vera, metti falso
-					if(!res){
-						conditions_res.push(false);
-						//console.log("                         > falso");	
-					}
+					//metti risultato della condizione
+					conditions_series_res.push(condition_res);
+					//debug
+					if(condition_res) { if(debug) console.log("                  condizione:"+condition+" > VERO!");	 }
 				}
-				//valuta
-				var to_hide = false;
-				for(var cond_res in conditions_res){
-					//console.log(conditions_res[cond_res]);
-					if( !conditions_res[cond_res] ) {
-						to_hide = true;
-						//console.log("nascondo");
+				
+				//valuta se almeno una condizione è vera
+				if(debug) console.log("                  Valuto...");
+				var to_show = false;
+				for(var cond_res in conditions_series_res){
+					if(debug) console.log("                          " + cond_res );
+					if( conditions_series_res[cond_res] ) {
+						to_show = true;
+						if(debug) console.log("                          Visualizzato!");
 						break;
 					}
 				}
+				
 				//aggiungi a hide o show
-				if(to_hide){
-					todisable.push(related);
+				if(to_show){
+					toenable.push(related);
 					//console.log('da disabilitare '+related);
 				} else {
-					toenable.push(related);
+					todisable.push(related);
 					//console.log('da abilitare '+related);
 				}
 			}
