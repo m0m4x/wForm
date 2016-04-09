@@ -5,6 +5,7 @@
  */	
 	var basepath = "wform";
  
+	var debug = false;
  
 	/* Avvio */
 	
@@ -131,18 +132,20 @@
 	
 	function checkformChange() {
 		
-		console.log("Cambiato: "+$(this).attr('id'));
+		if(debug) console.log("Cambiato: "+$(this).attr('id'));
 		
 		//Check se abilita o nascondi variabile
 		ui_show_var($(this));
 		
 		//Aggiurna status documento
 		ui_update_updtstatus(false);
+		
+		//Azioni correlate alla modifca del campo
+			//cerca di autocompilare il campo "lettere"
+			text_lettere($(this).attr('id'));
 	}
 	
 	function ui_show_var(dom){
-
-		var debug = false;
 	
 		if(debug) console.log('check richiesto da dom '+dom.attr('id')+" "+$(this).text());
 		
@@ -308,6 +311,39 @@
 		}
 		//console.log("getVal" + val);
 		return val;
+	}
+	
+	function text_lettere(id){
+		if (document.getElementById(id+"_lettere")) {
+			//It exist
+			var c_dom = get_dom_byid(id);
+			var c_dom_val = get_dom_val(c_dom);
+			var c_dom_lettere = get_dom_byid(id+"_lettere");
+			//proponi valore solo se campo vuoto
+			if(!c_dom_lettere.val()){
+				//replace text
+				$.ajax({
+					url: "/"+basepath+"/lib/req_math.php", 
+					cache: false,
+					context: document.body, 
+					success: function(data){
+								if(data!=""){
+									if(data.substring(0, 1)=="#"){
+											view_alert("fail","Errore dal server: "+data,false);
+									}else {
+											//valore da inserire in campo
+											var value = data.replace(/\s/g, '');
+											c_dom_lettere.val(value);
+									}
+								}
+							 },
+					error: function(data){
+								view_alert("fail","Errore generico:"+data.responseText,false);
+							 },
+					data: 'action=numtoword&str='+c_dom_val+''
+				});
+			}
+		}
 	}
 	
 	/* Carica */

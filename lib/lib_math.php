@@ -145,4 +145,178 @@ function wordsToNumber($data) {
     return $sum + $stack->pop();
 }
 
+
+
+/**
+ * Converti un numero o una stringa come "10,1" in "dieci virgola uno"
+ *
+ * "10.1" => "dieci virgola uno"
+ * "10,1" => "dieci virgola uno"
+ *  10,1  => "dieci virgola uno"
+ *
+ * @param string $data The numeric string.
+ */
+function numbertoWords($number) {
+    
+    $hyphen      = ' ';
+    $conjunction = '';
+    $separator   = ' e ';
+    $negative    = 'meno ';
+    $decimal     = ' virgola ';
+    $dictionary  = array(
+        0                   => 'zero',
+        1                   => 'uno',
+        2                   => 'due',
+        3                   => 'tre',
+        4                   => 'quattro',
+        5                   => 'cinque',
+        6                   => 'sei',
+        7                   => 'sette',
+        8                   => 'otto',
+        9                   => 'nove',
+        10                  => 'dieci',
+        11                  => 'undici',
+        12                  => 'dodici',
+        13                  => 'tredici',
+        14                  => 'quattordici',
+        15                  => 'quindici',
+        16                  => 'sedici',
+        17                  => 'diciasette',
+        18                  => 'diciotto',
+        19                  => 'diciannove',
+        20                  => 'venti',
+        30                  => 'trenta',
+        40                  => 'quaranta',
+        50                  => 'cinquanta',
+        60                  => 'sessanta',
+        70                  => 'settanta',
+        80                  => 'ottanta',
+        90                  => 'novanta',
+        100                 => 'cento',
+        1000                => 'mille',
+		"@1000"                => 'mila',
+        1000000             => 'un milione',
+        1000000000          => 'un miliardo',
+//        1000000000000       => 'un trilione',
+//        1000000000000000    => 'quadrillion',
+//        1000000000000000000 => 'quintillion'
+    );
+    
+	if (!isset($number)){
+		return false;
+	}
+	
+    if (is_string($number)) {
+		//cambia , con .
+		if (strpos($number, ',') !== false) {
+			$number = str_replace(",",".",$number);
+		}
+		//togli spazi
+		$number = str_replace(" ","",$number);
+		//togli segno "+"
+		if (strpos($number, '+') !== false) {
+			$number = str_replace("+","",$number);
+		}
+    }
+    
+    if (($number >= 0 && (int) $number < 0) || (int) $number < 0 - PHP_INT_MAX) {
+        // overflow
+        trigger_error(
+            'numbertoWords only accepts numbers between -' . PHP_INT_MAX . ' and ' . PHP_INT_MAX,
+            E_USER_WARNING
+        );
+        return false;
+    }
+
+    if ($number < 0) {
+		$numofdec = strlen(substr(strrchr($number, "."), 1));;
+        return $negative . numbertoWords(number_format(abs($number),$numofdec));
+    }
+    
+    $string = $fraction = null;
+    
+    if (strpos($number, '.') !== false) {
+        list($number, $fraction) = explode('.', $number);
+    }
+    
+    switch (true) {
+        case $number < 21:
+			//remove 0 initials
+			$string = ""; //echo $number . "-" . substr($number,1); exit;
+			while(substr($number,0,1)=="0" && strlen($number)>1){
+				$string .= $dictionary[0]." ";
+				$number = substr($number,1);
+			}
+			$string .= $dictionary[(string)$number];
+            break;
+        case $number < 100:
+            $tens   = ((int) ($number / 10)) * 10;
+            $units  = $number % 10;
+            $string = $dictionary[$tens];
+            if ($units) {
+                //$string .= $hyphen . $dictionary[$units];
+				$string = wordcollision ($string , $dictionary[$units]);
+            }
+            break;
+        case $number < 1000:
+            $hundreds  = $number / 100;
+            $remainder = $number % 100; 
+			if (intval($hundreds)==1) $string = $dictionary[100]; else
+            $string = $dictionary[$hundreds] . '' . $dictionary[100];
+            if ($remainder) {
+                $string .= $conjunction . numbertoWords($remainder);
+            }
+            break;
+        default:
+            $baseUnit = pow(1000, floor(log($number, 1000)));
+            $numBaseUnits = (int) ($number / $baseUnit);
+            $remainder = $number % $baseUnit;
+			if($numBaseUnits == 1 && $baseUnit == 1000){
+				$string = 'mille';
+			} else 
+				$string = numbertoWords($numBaseUnits) . '' . $dictionary['@'.$baseUnit];
+            if ($remainder) {
+                //$string .= $remainder < 100 ? $conjunction : $separator;
+                $string .= $separator . numbertoWords($remainder);
+            }
+            break;
+    }
+    
+    if (null !== $fraction && is_numeric($fraction)) {
+        $string .= $decimal . numbertoWords($fraction);
+		/*
+		$string .= $decimal;
+        $words = array();
+        foreach (str_split((string) $fraction) as $number) {
+            $words[] = $dictionary[$number];
+        }
+        $string .= implode(' ', $words);
+		*/
+    }
+    
+    return $string;
+}
+
+function wordcollision($wrd1,$wrd2){
+	$vocals = array("a", "e", "i", "o", "u");
+	if  ( 	in_array(substr($wrd1, -1), $vocals) && 
+			in_array(substr($wrd2,  0, 1), $vocals)
+		) {
+		return substr($wrd1, 0 , -1) . $wrd2 ;
+	} else {
+		return $wrd1 . $wrd2 ;
+	}
+		
+	
+}
+
+
+/*
+echo numbertoWords("-0.11"); exit;
+echo numbertoWords(0)."<br>";
+for($i=0;$i<6;$i=$i+0.1){
+	echo $i . " => " . numbertoWords($i)."<br>";
+}
+*/
+
 ?>
