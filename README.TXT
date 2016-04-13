@@ -1,10 +1,13 @@
 === wForm ===
 Contributors: Zanini Massimo
-
 License: GPLv3 or later
-License URI: http://www.gnu.org/licenses/agpl-3.0.en.html
+Website: https://bitbucket.org/m0m4x/wform/
+Source: https://bitbucket.org/m0m4x/wform/
+SVN Git: https://bitbucket.org/m0m4x/wform.git
 
-Create web form from word documents.
+=== Description ===
+
+Create web form from word documents, in a fast and reliable way.
 
 
 == Installation ==
@@ -22,6 +25,14 @@ Create web form from word documents.
 
 == Changelog ==
 
+:/
+
 
 == To Do ==
 
+:/
+
+
+== Copyright and license ==
+Code and documentation copyright (C) 2016 Zanini Massimo released under the AGPL license.
+See LICENSE.TXT for Copyright and licensing information.
