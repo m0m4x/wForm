@@ -15,7 +15,8 @@ Create web form from word documents, in a fast and reliable way.
 1. Upload the source files to your web server
 2. Create a [MySql] db
 3. Load tables with sql in installation\wform.sql
-4. Load word documents in doc\ folder
+4. Change mysql db credentials in lib\lib_db.php
+5. Load word documents in doc\ folder
 
 *remember to*
 * enable htaccess reading with `AccessFileName htaccess.txt` in web server [httpd.conf] .
@@ -33,6 +34,17 @@ Create web form from word documents, in a fast and reliable way.
 :/
 
 
+== Contact ==
+
+For comments and requests, questions related to obtaining, building or installing, send
+an email to:
+
+	massimozanini86@gmail.com
+
+
 == Copyright and license ==
 Code and documentation copyright (C) 2016 Zanini Massimo released under the AGPL license.
 See LICENSE.TXT for Copyright and licensing information.
+
+
+
