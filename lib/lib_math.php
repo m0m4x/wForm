@@ -207,6 +207,10 @@ function numbertoWords($number) {
 	}
 	
     if (is_string($number)) {
+		//togli . se presente ,
+		if ((strpos($number, '.') !== false) && (strpos($number, ',') !== false)) {
+			$number = str_replace(".","",$number);
+		}
 		//cambia , con .
 		if (strpos($number, ',') !== false) {
 			$number = str_replace(",",".",$number);
@@ -218,6 +222,15 @@ function numbertoWords($number) {
 			$number = str_replace("+","",$number);
 		}
     }
+	
+	//migliaia e ,00 metti /00 anziché scrivere virgolazerozero
+	$barrazero = false;
+	if($number>10000){
+		$dec = substr(strrchr($number, "."), 1);
+		if($dec=="00"){
+			$barrazero = true;
+		}
+	}
     
     if (($number >= 0 && (int) $number < 0) || (int) $number < 0 - PHP_INT_MAX) {
         // overflow
@@ -293,6 +306,10 @@ function numbertoWords($number) {
         $string .= implode(' ', $words);
 		*/
     }
+	
+	if($barrazero){
+		$string = str_replace("virgola zero zero","/00",$string);
+	}
     
     return $string;
 }
