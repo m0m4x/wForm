@@ -688,6 +688,11 @@
 		 return (number < 10 ? '0' : '') + number
 	}
 
+	
+	function viewHelpModal(){
+		$('#commModalHelpContent').show();
+		$('#commModalHelp').modal('show');
+	}
 
  
  

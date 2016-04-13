@@ -159,10 +159,11 @@ $id = isset($_GET['id']) ? mysqli_real_escape_string($dbhandle,$_GET['id']) : nu
             
 			<div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
                 <ul class="nav navbar-nav pull-right">
-                    <!--
+                    
 					<li>
-                        <a href="">Link 1</a>
+                        <a href="javascript:viewHelpModal();">Link 1</a>
                     </li>
+					<!--
 					<li>
                         <a href="">Link 2</a>
                     </li>
@@ -200,6 +201,7 @@ $id = isset($_GET['id']) ? mysqli_real_escape_string($dbhandle,$_GET['id']) : nu
 			</small>
 		</div>
 		<hr style="margin-top:5px;" />
+		
 		<div class="row">
 		  <div class="col-md-12">
 		  
@@ -440,14 +442,79 @@ $id = isset($_GET['id']) ? mysqli_real_escape_string($dbhandle,$_GET['id']) : nu
 						  </span>
 					  </div>
 					</div>
-
 				</div>
 		  </div>
 		</div>
 	  </div>
 	  </div>
 	</div>
+	
+<div class="modal fade" id="commModalHelp">
+  <div class="modal-dialog" role="document" style="width: 90%;height:40%">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+        <h4 class="modal-title">Guida alla compilazione della minuta</h4>
+      </div>
+      <div class="modal-body" style="overflow:scroll;max-height:400px;">
 
+							<h1>Quo modo autem optimum, si bonum praeterea nullum est?</h1>
+
+							<p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. An nisi populari fama? <b>At hoc in eo M.</b> Duo Reges: constructio interrete. Si quicquam extra virtutem habeatur in bonis. Ergo illi intellegunt quid Epicurus dicat, ego non intellego? Quod quidem iam fit etiam in Academia. Iubet igitur nos Pythius Apollo noscere nosmet ipsos. </p>
+
+							<pre>
+							Numquam audivi in Epicuri schola Lycurgum, Solonem,
+							Miltiadem, Themistoclem, Epaminondam nominari, qui in ore
+							sunt ceterorum omnium philosophorum.
+
+							Illo enim addito iuste fit recte factum, per se autem hoc
+							ipsum reddere in officio ponitur.
+							</pre>
+
+
+							<h2>Et non ex maxima parte de tota iudicabis?</h2>
+
+							<p>Honesta oratio, Socratica, Platonis etiam. Et si turpitudinem fugimus in statu et motu corporis, quid est cur pulchritudinem non sequamur? <i>Hic ambiguo ludimur.</i> Si enim ad populum me vocas, eum. Mihi enim erit isdem istis fortasse iam utendum. <code>Haec dicuntur inconstantissime.</code> Cur fortior sit, si illud, quod tute concedis, asperum et vix ferendum putabit? <b>Quis enim redargueret?</b> </p>
+
+							<p>Multa sunt dicta ab antiquis de contemnendis ac despiciendis rebus humanis; Omnes enim iucundum motum, quo sensus hilaretur. <b>Certe non potest.</b> Idemne potest esse dies saepius, qui semel fuit? </p>
+
+							<p>Quo tandem modo? Quid ad utilitatem tantae pecuniae? Et nemo nimium beatus est; Piso, familiaris noster, et alia multa et hoc loco Stoicos irridebat: Quid enim? Conferam tecum, quam cuique verso rem subicias; Est, ut dicis, inquit; </p>
+
+							<dl>
+								<dt><dfn>Quo tandem modo?</dfn></dt>
+								<dd>Quis est enim, in quo sit cupiditas, quin recte cupidus dici possit?</dd>
+								<dt><dfn>Sint ista Graecorum;</dfn></dt>
+								<dd>Modo etiam paulum ad dexteram de via declinavi, ut ad Pericli sepulcrum accederem.</dd>
+								<dt><dfn>Sullae consulatum?</dfn></dt>
+								<dd>Et hunc idem dico, inquieta sed ad virtutes et ad vitia nihil interesse.</dd>
+								<dt><dfn>Moriatur, inquit.</dfn></dt>
+								<dd>In qua quid est boni praeter summam voluptatem, et eam sempiternam?</dd>
+							</dl>
+
+
+							<h3>Indicant pueri, in quibus ut in speculis natura cernitur.</h3>
+
+							<p>Haec igitur Epicuri non probo, inquam. Urgent tamen et nihil remittunt. Igitur neque stultorum quisquam beatus neque sapientium non beatus. Ita enim vivunt quidam, ut eorum vita refellatur oratio. Philosophi autem in suis lectulis plerumque moriuntur. Post enim Chrysippum eum non sane est disputatum. <code>Est, ut dicis, inquam.</code> </p>
+
+							<ul>
+								<li>Ut proverbia non nulla veriora sint quam vestra dogmata.</li>
+								<li>Ipse Epicurus fortasse redderet, ut Sextus Peducaeus, Sex.</li>
+								<li>Neque solum ea communia, verum etiam paria esse dixerunt.</li>
+							</ul>
+	  
+	  
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+        <button type="button" class="btn btn-primary">Save changes</button>
+      </div>
+    </div><!-- /.modal-content -->
+  </div><!-- /.modal-dialog -->
+</div><!-- /.modal -->
+
+	
     <!-- Bootstrap Core JavaScript -->
 	<script src="/wform/js/bootstrap.min.js" 
 	integrity="sha384-0mSbJDEHialfmuBBQP6A4Qrprq5OVfW37PRR3j5ELqxss1yVqOtnepnHVP9aJ7xS" 
