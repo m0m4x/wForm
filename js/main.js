@@ -250,10 +250,10 @@
 				//aggiungi a hide o show
 				if(to_show){
 					toenable.push(related);
-					//console.log('da disabilitare '+related);
+					if(debug) console.log('da abilitare '+related);
 				} else {
 					todisable.push(related);
-					//console.log('da abilitare '+related);
+					if(debug) console.log('da disabilitare '+related);
 				}
 			}
 		}
@@ -261,9 +261,10 @@
 		var i;
 		for (i = 0; i < todisable.length; ++i) {
 			//view_alert("info","disabilitato "+todisable[i]);
+			if(debug) console.log('disabilito dom '+todisable[i]+'...'); 
 			var dom = get_dom_byid(todisable[i]);
 				if(dom.length){ dom.closest('div.form-group').hide(); } else { 
-					//console.log('disabilita dom '+todisable[i]+' non trovato'); 
+					if(debug) console.log('disabilita dom '+todisable[i]+' non trovato'); 
 				}
 		}
 		//Abilita
@@ -272,7 +273,7 @@
 			//view_alert("info","disabilitato "+todisable[i]);
 			var dom = get_dom_byid(toenable[i]);
 				if(dom.length){ dom.closest('div.form-group').show(); }  else { 
-					//console.log('abilita dom '+toenable[i]+' non trovato');
+					if(debug) console.log('abilita dom '+toenable[i]+' non trovato');
 				}
 		}
 		
@@ -287,6 +288,10 @@
 		} else {
 			//è radio
 			dom = $('input[name='+id+']:checked');
+			//è radio non spuntato (prendi primo)
+			if(!(dom.length)){
+				dom = $('input[name='+id+']:first');
+			}
 		}
 		if(!(dom.length)){
 			//console.log(id+"non trovato!");
@@ -621,7 +626,7 @@
 				$('.btn-crea').prop('disabled', true);
 				//$('.btn-crea-tooltip').tooltip('enable');
 			}else {
-				if($('input:radio:checked').length == $('.input-group-radio').size()){
+				if($('input:radio:checked:visible').length == $('.input-group-radio:visible').size()){
 					//Ok
 					$('.btn-crea').prop('disabled', false);
 					//$('.btn-crea-tooltip').tooltip('disable');

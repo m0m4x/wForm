@@ -27,6 +27,8 @@
 ini_set('xdebug.var_display_max_depth', 10);
 ini_set('xdebug.var_display_max_children', 256);
 ini_set('xdebug.var_display_max_data', 1024);
+ini_set('pcre.backtrack_limit', 99999999999);
+ini_set("pcre.recursion_limit", 99999999999);
 
 //HEADER - NO CACHE
 /*header("Cache-Control: no-cache, must-revalidate"); // HTTP/1.1
@@ -183,16 +185,23 @@ function form_load($doc_type,&$p){
 	//Get text
 	$p = form_load_text($doc_type);
 		
+		//echo $p;exit;
+		
 	//Reset Global Var
 	$form=Array();
 	$stack_se=Array();
 	
 	$check_addcond = Array(); // ci scrivo le condizioni aggiuntive, solo per vedere se alla fine sono state definite singolarmente.
-
+	
+	//$a=0;
+	
 	//Parsing codes
 	$pattern = "/[\[][^\]]*[\]]/";	// [*]
 	$p = preg_replace_callback_offset(	$pattern, 
 							function ($op) use (&$form,&$stack_se,&$check_addcond)  {
+								//global $a;
+								//$a++;
+								//echo $a."<br>";
 								//Generate field $f in $form
 								// (id) 
 								// (tipo) 
@@ -327,6 +336,11 @@ function form_load($doc_type,&$p){
 										
 										}
 										
+										//Validità per scelte
+										$validity[] = get_se_validity($stack_se);		//#dev# 01/12/2016 (ATTIVATO FILTRO ANCHE SU SCELTE)
+										//echo $id;
+										//var_dump($validity);
+										
 										//Crea stack SE
 										$s = array(	"id" 	=> $id,
 													"tipo"	=> $tipo,
@@ -336,7 +350,9 @@ function form_load($doc_type,&$p){
 																				"val" => $val , 
 																				"dep" => sizeof($stack_se) , 
 																				"txt" => "" ) 
-																	) 
+																	) ,
+													"valid"	=> $validity,				//#dev# 01/12/2016 (ATTIVATO FILTRO ANCHE SU SCELTE)
+																	
 													);
 										
 										//Replace
@@ -418,7 +434,8 @@ function form_load($doc_type,&$p){
 																"tipo" => $s["tipo"],
 																"label" => $s["label"], "info" => $s["info"],
 																"sect" => array( $s["sect"]
-																				)
+																				),
+																"valid"=>$s["valid"],
 																);
 											if($info_label!="") { $form[$id]["label"] = $info_label; }
 											$form[$id] = $f;
@@ -427,11 +444,13 @@ function form_load($doc_type,&$p){
 											//TODO CHECK - Se tipologia diversa errore!
 											$f["sect"][] = $s["sect"];
 											
+											
 											//Info aggiuntive - aggiorna
 											if($info_label != "") { $s["label"] = $info_label; }
 											if($info_label_atext!="") { $s["info"] = $info_label_atext; }
 											if($s["label"] != "") { $f["label"] = $s["label"]; }
 											if($s["info"] != "") { $f["info"] = $s["info"]; }
+											if(count($s["valid"]) >  0) { if(!in_array($s["valid"][0],$f["valid"])){ array_push($f["valid"] , $s["valid"][0]);  } }			//#dev# 01/12/2016 (ATTIVATO FILTRO ANCHE SU SCELTE)
 											
 											$form[$id] = $f; //Replace not add
 										}
@@ -505,7 +524,7 @@ function form_load($doc_type,&$p){
 								return $out_replace;
 							},
 							$p,
-							PREG_OFFSET_CAPTURE );
+							-1 );
 	
 	//Check
 	
@@ -529,6 +548,7 @@ function form_load($doc_type,&$p){
 	
 	//var_dump($form);
 	//echo str_replace("<par>","<br>",$p);
+
 	
 	//Riordina
 	//usort($form, "form_sort");
@@ -625,6 +645,9 @@ function form_se($form){
 		$info_label = ($field['label']!="" ? $field['label'] : $field['id']); 
 		$info_label = str_replace("_", " ", $info_label);
 		
+		//Mostra sempre o nascondi
+		$hide = form_var_to_hide($id);
+		
 		switch ($field["tipo"]) {
 				case "se":	//se checkbox
 					
@@ -671,7 +694,7 @@ function form_se($form){
 							
 					?>
 						<!-- se dropdown -->
-						<div class="form-group form-group-sm radio_buttons optional user_horizontal_sex input-group-radio">
+						<div class="form-group form-group-sm radio_buttons optional user_horizontal_sex input-group-radio" style="<?php if($hide) echo "display:none; ";?>">
 							<label class="radio_buttons control-label col-md-4"><?php echo $info_label; ?></label>
 							<div class="col-md-8">
 							<?php
@@ -751,6 +774,16 @@ function form_var($form){
 }
 	function print_var($field,$add=false){
 		global $form;
+		
+		//Non mettere in form il campo con valore calcolato (val_calc)
+		//var_dump($field);
+		if(array_key_exists("val_calc",$field)){
+			if($field['val_calc']!=""){
+				//echo "aaa".$field['id'];
+				return true;
+			}
+		}
+	
 		
 		//E' un aggiunta ad un campo precedente?
 		$id = $field['id'];
@@ -884,22 +917,25 @@ function form_relations($form){
 	foreach ($form as $field) {
 		
 		$id = $field['id'];
-		if($field['tipo']=="var"){
+		if($field['tipo']!="avar"){ 	//#dev# 01/12/2016 (ATTIVATO FILTRO ANCHE SU SCELTE) - !="avar" sarebbe per togliere l'if 
 			
-			if(!array_key_exists("id",$val['*'])){
+			if(!array_key_exists($id,$val['*'])){
 				sort($field["valid"]);
+				$breaked = 0;
 				foreach ($field["valid"] as $condition_serie){
-					//TODO - SI PRENDONO TUTTI CORRETTO?
-					foreach ($condition_serie as $condition){
-						if($condition=='*') {
-							$val['*'][] = $id;
-							break;
-						}else{
-							$s = explode("=",$condition);
-							$campo = $s[0];
-							$valore = $s[1];
-							$val[$campo][]=$id;
-							$val[$campo] = array_unique($val[$campo]);
+					if($breaked==0){
+						//TODO - SI PRENDONO TUTTI CORRETTO?
+						foreach ($condition_serie as $condition){
+							if($condition=='*') {
+								$val['*'][] = $id;
+								$breaked=1;
+							}else{
+								$s = explode("=",$condition);
+								$campo = $s[0];
+								$valore = $s[1];
+								$val[$campo][]=$id;
+								$val[$campo] = array_unique($val[$campo]);
+							}
 						}
 					}
 				}						
@@ -920,35 +956,38 @@ function form_validity($form){
 	foreach ($form as $field) {
 		
 		$id = $field['id'];
-		if($field['tipo']=="var"){
+		if($field['tipo']!="avar"){		//#dev# 01/12/2016 (ATTIVATO FILTRO ANCHE SU SCELTE) - !="avar" sarebbe per togliere l'if 
 
-			if(!array_key_exists("id",$val['*'])){
+			if(!array_key_exists($id,$val['*'])){
 				sort($field["valid"]);
+				$breaked = 0;
 				foreach ($field["valid"] as $condition_serie){
-					//parsa tutte le condizioni con "E" all'interno di un unica condizione
-					$cond = Array();
-					foreach ($condition_serie as $condition){
-						if($condition=='*') {
-							$val['*'][] = $id;
-							break;
-						}else{
-							$s = explode("=",$condition);
-							$condition_campo = $s[0];
-							$condition_str = $s[1];
-							if(!(strpos($condition,"|")===false)){
-								//presenti OR
-								$condition_vals = explode("|",$condition_str);
-								foreach ($condition_vals as $valore)
+					if($breaked==0){
+						//parsa tutte le condizioni con "E" all'interno di un unica condizione
+						$cond = Array();
+						foreach ($condition_serie as $condition){
+							if($condition=='*') {
+								$val['*'][] = $id;
+								$breaked=1;
+							}else{
+								$s = explode("=",$condition);
+								$condition_campo = $s[0];
+								$condition_str = $s[1];
+								if(!(strpos($condition,"|")===false)){
+									//presenti OR
+									$condition_vals = explode("|",$condition_str);
+									foreach ($condition_vals as $valore)
+										$cond[$condition_campo][]=$valore;
+								}else {
+									//nessun OR
+									$valore = $condition_str; //explode("|",condition_str);
 									$cond[$condition_campo][]=$valore;
-							}else {
-								//nessun OR
-								$valore = $condition_str; //explode("|",condition_str);
-								$cond[$condition_campo][]=$valore;
+								}
+								$cond[$condition_campo] = array_unique($cond[$condition_campo]);
 							}
-							$cond[$condition_campo] = array_unique($cond[$condition_campo]);
 						}
+						if(!empty($cond)) { $val[$id][] = $cond; }
 					}
-					if(!empty($cond)) { $val[$id][] = $cond; }
 				}
 			}
 			
