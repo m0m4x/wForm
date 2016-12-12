@@ -193,30 +193,36 @@
 					for(var condition_field in field_validity[related][condition]){
 						var cond_res;
 						// prendo il valore del campo da valutare
-						var c_dom = get_dom_byid(condition_field);
-						if(!c_dom.length){ return; /*valore del dom non trovato*/ }
-						var c_dom_val = get_dom_val(c_dom);
+						var c_dom = get_dom_byid(condition_field, true);
 						//debug
 						if(debug) console.log("                                      campo:"+condition_field);
-						if(debug) console.log("                   valore attuale del campo:"+c_dom_val);
-						//per ogni valore ammesso controlla se almeno 1 è vero (O)
+						//variabile risultato almeno una condizione deve portare la variabile a true
 						var res = false;
-						for(var condition_value in field_validity[related][condition][condition_field]){
-							var value = field_validity[related][condition][condition_field][condition_value];
-							//debug
-							if(debug) console.log("                                   valore ammesso:"+value);
-							//Check se inizia con !
-							var c_bool = true;
-							if(value.substring(0, 1)=="!"){
-								c_bool = false;
-								value = value.substring(1);
-							}
-							//valuta
-							if((c_dom_val==value) === c_bool){
-								res = true;
-								if(debug) console.log("                                                  !vero");
-								//necessario che solo 1 sia vero
-								break; 
+						//verifica presenza dom
+						if(!c_dom.length){ 
+							/*dom non trovato*/ 
+							if(debug) console.log("                                      !dom non trovato skip.."); 
+						} else {
+							var c_dom_val = get_dom_val(c_dom);
+							if(debug) console.log("                   valore attuale del campo:"+c_dom_val);
+							//per ogni valore ammesso controlla se almeno 1 è vero (O)
+							for(var condition_value in field_validity[related][condition][condition_field]){
+								var value = field_validity[related][condition][condition_field][condition_value];
+								//debug
+								if(debug) console.log("                                   valore ammesso:"+value);
+								//Check se inizia con !
+								var c_bool = true;
+								if(value.substring(0, 1)=="!"){
+									c_bool = false;
+									value = value.substring(1);
+								}
+								//valuta
+								if((c_dom_val==value) === c_bool){
+									res = true;
+									if(debug) console.log("                                                  !vero");
+									//necessario che solo 1 sia vero
+									break; 
+								}
 							}
 						}
 						//se nessun valore soddisfatto per questo campo esci subito (E)
@@ -279,7 +285,7 @@
 		
 	}
 	
-	function get_dom_byid(id){
+	function get_dom_byid(id, strict=false){	//strict=true => not get the first radio (id<>) when unchecked
 		var dom;
 		//cambia dal tipo
 		if ( $( '#'+id ).length ) {
@@ -289,7 +295,7 @@
 			//è radio
 			dom = $('input[name='+id+']:checked');
 			//è radio non spuntato (prendi primo)
-			if(!(dom.length)){
+			if(!(dom.length) && !strict){
 				dom = $('input[name='+id+']:first');
 			}
 		}

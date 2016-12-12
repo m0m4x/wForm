@@ -655,7 +655,7 @@ function form_se($form){
 					
 					?>
 						<!-- se checkbox -->
-						<div class="form-group form-group-sm">
+						<div class="form-group form-group-sm" style="<?php if($hide) echo "display:none; ";?>">
 						<label for="<?php echo $id; ?>" class="control-label col-md-4"><?php echo $info_label; ?></label>
 							<div class="col-md-8">
 								<div class="checkbox">
